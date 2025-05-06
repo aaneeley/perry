@@ -1,6 +1,5 @@
 use crate::common::token::{Token, TokenWithLocation};
 
-#[allow(dead_code)] // HACK:
 pub struct Lexer {
     input: String,
     position: usize,
@@ -8,7 +7,6 @@ pub struct Lexer {
     column: usize,
 }
 
-#[allow(dead_code)] // HACK:
 impl Lexer {
     pub fn new(input: String) -> Self {
         Lexer {
@@ -19,10 +17,12 @@ impl Lexer {
         }
     }
 
+    // Peek the next char without consuming
     fn peek_next(&self) -> Option<char> {
         self.input[self.position..].chars().next()
     }
 
+    // Peek and consume
     fn next_char(&mut self) -> Option<char> {
         let current_char = self.peek_next();
         // Update position
@@ -36,6 +36,8 @@ impl Lexer {
         current_char
     }
 
+    // Skip over whitespace and newlines
+    // TODO: Skip comments
     fn skip_empty(&mut self) {
         while let Some(ch) = self.peek_next() {
             if ch.is_whitespace() {
@@ -102,11 +104,7 @@ impl Lexer {
             }
         };
 
-        TokenWithLocation {
-            token,
-            line: self.line,
-            column: self.column,
-        }
+        token.with_location(self.line, self.column)
     }
 
     fn consume_numeric_literal(&mut self) -> Token {

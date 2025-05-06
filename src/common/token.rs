@@ -18,7 +18,7 @@ pub enum Token {
     Invalid(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct TokenWithLocation {
     pub token: Token,
     pub line: usize,
