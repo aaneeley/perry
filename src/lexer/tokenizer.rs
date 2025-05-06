@@ -15,7 +15,7 @@ impl Lexer {
             input,
             position: 0,
             line: 1,
-            column: 1,
+            column: 0,
         }
     }
 
@@ -28,7 +28,7 @@ impl Lexer {
         // Update position
         if current_char == Some('\n') {
             self.line += 1;
-            self.column = 1;
+            self.column = 0;
         } else {
             self.column += 1;
         }
@@ -49,21 +49,57 @@ impl Lexer {
     fn next_token(&mut self) -> TokenWithLocation {
         self.skip_empty();
 
-        let nc = self.next_char();
+        let pn = self.peek_next();
 
-        if nc.is_none() {
+        if pn.is_none() {
             return TokenWithLocation {
                 token: Token::EOF,
                 line: self.line,
-                column: self.column,
+                column: self.column + 1,
             };
         }
 
-        let next_char = nc.unwrap();
-        let token = match next_char {
-            // 'a'..='z' | 'A'..='Z' | '_' => self.consume_string_literal(),
-            '+' => Token::Plus,
-            _ => Token::Invalid(next_char.to_string()),
+        let peeked = pn.unwrap();
+        let token = match peeked {
+            'a'..='z' | 'A'..='Z' | '_' => self.consume_identifier(),
+            '0'..='9' => self.consume_numeric_literal(),
+            '"' => self.consume_string_literal(),
+            '+' => {
+                self.next_char();
+                Token::Plus
+            }
+            '-' => {
+                self.next_char();
+                Token::Minus
+            }
+            '*' => {
+                self.next_char();
+                Token::Star
+            }
+            '/' => {
+                self.next_char();
+                Token::Slash
+            }
+            '%' => {
+                self.next_char();
+                Token::Percent
+            }
+            ';' => {
+                self.next_char();
+                Token::Semicolon
+            }
+            '(' => {
+                self.next_char();
+                Token::LeftParen
+            }
+            ')' => {
+                self.next_char();
+                Token::RightParen
+            }
+            _ => {
+                self.next_char();
+                Token::Invalid(peeked.to_string())
+            }
         };
 
         TokenWithLocation {
@@ -72,9 +108,48 @@ impl Lexer {
             column: self.column,
         }
     }
-    // fn consume_numeric_literal(&mut self) -> Token {}
-    // fn consume_string_literal(&mut self) -> Token {}
-    // fn consume_identifier(&mut self) -> Token {}
+
+    fn consume_numeric_literal(&mut self) -> Token {
+        let mut literal = String::new();
+        while let Some(next) = self.peek_next() {
+            match next {
+                '0'..='9' => {
+                    literal.push(next);
+                    self.next_char();
+                }
+                _ => break,
+            }
+        }
+        // NOTE: Unwrap is safe here because of the char match
+        Token::NumericLiteral(literal.parse().unwrap())
+    }
+
+    fn consume_string_literal(&mut self) -> Token {
+        let mut literal = String::new();
+        self.next_char(); // Skip starting quote
+        while let Some(next) = self.next_char() {
+            if next == '"' {
+                break;
+            }
+            literal.push(next)
+        }
+        Token::StringLiteral(literal)
+    }
+
+    fn consume_identifier(&mut self) -> Token {
+        let mut identifier = String::new();
+        while let Some(next) = self.peek_next() {
+            match next {
+                'a'..='z' | 'A'..='Z' | '_' => {
+                    identifier.push(next);
+                    self.next_char();
+                }
+                _ => break,
+            }
+        }
+        Token::Identifier(identifier)
+    }
+
     pub fn tokenize(&mut self) -> Vec<TokenWithLocation> {
         let mut tokens: Vec<TokenWithLocation> = Vec::new();
 

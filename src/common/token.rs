@@ -2,7 +2,7 @@
 #[allow(dead_code)] // HACK:
 pub enum Token {
     Identifier(String),
-    NumericalLiteral(i32),
+    NumericLiteral(i32),
     StringLiteral(String),
     LogicalLiteral(bool),
     Plus,
