@@ -126,6 +126,10 @@ impl Lexer {
                 self.next_char();
                 Token::Semicolon
             }
+            ':' => {
+                self.next_char();
+                Token::Colon
+            }
             ',' => {
                 self.next_char();
                 Token::Comma

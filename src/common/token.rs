@@ -15,6 +15,7 @@ pub enum Token {
     LeftBrace,
     RightBrace,
     Semicolon,
+    Colon,
     EOF,
     Invalid(String),
 }
