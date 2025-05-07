@@ -1,5 +1,10 @@
 use super::*;
 
+#[derive(Debug)]
+pub struct Program {
+    pub body: Vec<Statement>,
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Expression {
     Binary(Box<BinaryExpression>),

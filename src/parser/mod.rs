@@ -217,4 +217,12 @@ impl Parser {
         }
         statements
     }
+
+    // Basically just a wrapper around parse_body for now. This abstraction might be useful later
+    // to add global file properties like shebangs or imports
+    pub fn parse(&mut self) -> Program {
+        Program {
+            body: self.parse_body(),
+        }
+    }
 }

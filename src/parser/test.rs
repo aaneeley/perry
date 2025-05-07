@@ -5,10 +5,8 @@ use crate::Parser;
 use crate::parser::*;
 
 mod tests {
-
-    use crate::common::token::BinaryOperator;
-
     use super::*;
+    use crate::common::token::BinaryOperator;
 
     #[test]
     fn test_string_print() {
@@ -16,7 +14,7 @@ mod tests {
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize();
         let mut parser = Parser::new(tokens);
-        let ast = parser.parse_body();
+        let ast = parser.parse();
         let expected = vec![Statement::Expr(Expression::FunctionCall(Box::new(
             FunctionCall {
                 callee: "println".to_string(),
@@ -30,7 +28,7 @@ mod tests {
                 ],
             },
         )))];
-        assert_eq!(ast, expected);
+        assert_eq!(ast.body, expected);
     }
 
     #[test]
@@ -46,7 +44,7 @@ mod tests {
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize();
         let mut parser = Parser::new(tokens);
-        let ast = parser.parse_body();
+        let ast = parser.parse();
         // This is a horrendous black hole of paren matching hell
         // The test works and that's all that matters
         let expected = vec![Statement::If(IfStatement {
@@ -101,6 +99,6 @@ mod tests {
                 })),
             })),
         })];
-        assert_eq!(ast, expected);
+        assert_eq!(ast.body, expected);
     }
 }

@@ -3,7 +3,6 @@
 use super::*;
 
 mod tests {
-
     use super::*;
 
     #[test]
