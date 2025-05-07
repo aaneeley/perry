@@ -194,7 +194,7 @@ impl Parser {
 
     // Parses a statement (e.g., function call)
     fn parse_statement(&mut self) -> Statement {
-        let token = self.peek().clone();
+        let token = &self.peek();
         // All statements start with an identifier
         if let Token::Identifier(name) = token.token.clone() {
             self.advance(); // consume identifier

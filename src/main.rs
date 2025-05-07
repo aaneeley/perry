@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::{self, Read};
 
 use parser::ast::Parser;
-use tokenizer::lexer::Lexer;
+use tokenizer::Lexer;
 
 fn main() {
     let input = read_file("test.pry").unwrap();
