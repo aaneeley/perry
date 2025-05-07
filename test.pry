@@ -1,4 +1,7 @@
-println("Hello", "World");
-var a: int = 3 + 5;
-var b: string = "Hello";
-println(a * 2);
+if (1 > 2) {
+    print("A");
+} else if (2 > 1) {
+    print("B");
+} else {
+    print("C");
+}
