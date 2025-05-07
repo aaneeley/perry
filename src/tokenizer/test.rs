@@ -11,46 +11,32 @@ mod tests {
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize();
         let expected_tokens = vec![
-            TokenWithLocation {
-                token: Token::Identifier("print".to_string()),
-                line: 1,
-                column: 5,
-            },
-            TokenWithLocation {
-                token: Token::LeftParen,
-                line: 1,
-                column: 6,
-            },
-            TokenWithLocation {
-                token: Token::StringLiteral("Hello".to_string()),
+            Token::Identifier("print".to_string()).spanned(Span { line: 1, column: 1 }),
+            Token::LeftParen.spanned(Span { line: 1, column: 6 }),
+            Token::StringLiteral("Hello".to_string()).spanned(Span {
                 line: 1,
                 column: 13,
-            },
-            TokenWithLocation {
-                token: Token::Comma,
+            }),
+            Token::Comma.spanned(Span {
                 line: 1,
                 column: 14,
-            },
-            TokenWithLocation {
-                token: Token::StringLiteral("World!".to_string()),
+            }),
+            Token::StringLiteral("World!".to_string()).spanned(Span {
                 line: 1,
                 column: 23,
-            },
-            TokenWithLocation {
-                token: Token::RightParen,
+            }),
+            Token::RightParen.spanned(Span {
                 line: 1,
                 column: 24,
-            },
-            TokenWithLocation {
-                token: Token::Semicolon,
+            }),
+            Token::Semicolon.spanned(Span {
                 line: 1,
                 column: 25,
-            },
-            TokenWithLocation {
-                token: Token::EOF,
+            }),
+            Token::EOF.spanned(Span {
                 line: 1,
                 column: 26,
-            },
+            }),
         ];
         assert_eq!(tokens, expected_tokens);
     }
@@ -61,76 +47,53 @@ mod tests {
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize();
         let expected_tokens = vec![
-            TokenWithLocation {
-                token: Token::Identifier("println".to_string()),
-                line: 1,
-                column: 7,
-            },
-            TokenWithLocation {
-                token: Token::LeftParen,
-                line: 1,
-                column: 8,
-            },
-            TokenWithLocation {
-                token: Token::LeftParen,
-                line: 1,
-                column: 9,
-            },
-            TokenWithLocation {
-                token: Token::NumericLiteral(1),
+            Token::Identifier("println".to_string()).spanned(Span { line: 1, column: 7 }),
+            Token::LeftParen.spanned(Span { line: 1, column: 8 }),
+            Token::LeftParen.spanned(Span { line: 1, column: 9 }),
+            Token::NumericLiteral(1).spanned(Span {
                 line: 1,
                 column: 10,
-            },
-            TokenWithLocation {
-                token: Token::BinaryOperator(BinaryOperator::Add),
+            }),
+            Token::BinaryOperator(BinaryOperator::Add).spanned(Span {
                 line: 1,
                 column: 12,
-            },
-            TokenWithLocation {
-                token: Token::NumericLiteral(2),
+            }),
+            Token::NumericLiteral(2).spanned(Span {
                 line: 1,
                 column: 14,
-            },
-            TokenWithLocation {
-                token: Token::RightParen,
+            }),
+            Token::RightParen.spanned(Span {
                 line: 1,
                 column: 15,
-            },
-            TokenWithLocation {
-                token: Token::BinaryOperator(BinaryOperator::Multiply),
+            }),
+            Token::BinaryOperator(BinaryOperator::Multiply).spanned(Span {
                 line: 1,
                 column: 17,
-            },
-            TokenWithLocation {
-                token: Token::NumericLiteral(3),
+            }),
+            Token::NumericLiteral(3).spanned(Span {
                 line: 1,
                 column: 19,
-            },
-            TokenWithLocation {
-                token: Token::BinaryOperator(BinaryOperator::Divide),
+            }),
+            Token::BinaryOperator(BinaryOperator::Divide).spanned(Span {
                 line: 1,
                 column: 21,
-            },
-            TokenWithLocation {
-                token: Token::NumericLiteral(4),
+            }),
+            Token::NumericLiteral(4).spanned(Span {
                 line: 1,
                 column: 23,
-            },
-            TokenWithLocation {
-                token: Token::RightParen,
+            }),
+            Token::RightParen.spanned(Span {
                 line: 1,
                 column: 24,
-            },
-            TokenWithLocation {
-                token: Token::Semicolon,
+            }),
+            Token::Semicolon.spanned(Span {
                 line: 1,
                 column: 25,
-            },
-            TokenWithLocation {
-                token: Token::EOF,
+            }),
+            Token::EOF.spanned(Span {
                 line: 1,
                 column: 26,
-            },
+            }),
         ];
         assert_eq!(tokens, expected_tokens);
     }
@@ -141,86 +104,67 @@ mod tests {
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize();
         let expected_tokens = vec![
-            TokenWithLocation {
-                token: Token::Identifier("var".to_string()),
-                line: 1,
-                column: 3,
-            },
-            TokenWithLocation {
-                token: Token::Identifier("testvar".to_string()),
+            Token::Identifier("var".to_string()).spanned(Span { line: 1, column: 3 }),
+            Token::Identifier("testvar".to_string()).spanned(Span {
                 line: 1,
                 column: 11,
-            },
-            TokenWithLocation {
-                token: Token::Colon,
+            }),
+            Token::Colon.spanned(Span {
                 line: 1,
                 column: 12,
-            },
-            TokenWithLocation {
-                token: Token::Identifier("bool".to_string()),
+            }),
+            Token::Identifier("bool".to_string()).spanned(Span {
                 line: 1,
                 column: 17,
-            },
-            TokenWithLocation {
-                token: Token::Assign,
+            }),
+            Token::Assign.spanned(Span {
                 line: 1,
                 column: 19,
-            },
-            TokenWithLocation {
-                token: Token::LeftParen,
+            }),
+            Token::LeftParen.spanned(Span {
                 line: 1,
                 column: 21,
-            },
-            TokenWithLocation {
-                token: Token::NumericLiteral(5),
+            }),
+            Token::NumericLiteral(5).spanned(Span {
                 line: 1,
                 column: 22,
-            },
-            TokenWithLocation {
-                token: Token::BinaryOperator(BinaryOperator::GreaterThanOrEqual),
+            }),
+            Token::BinaryOperator(BinaryOperator::GreaterThanOrEqual).spanned(Span {
                 line: 1,
                 column: 25,
-            },
-            TokenWithLocation {
-                token: Token::LeftParen,
+            }),
+            Token::LeftParen.spanned(Span {
                 line: 1,
                 column: 27,
-            },
-            TokenWithLocation {
-                token: Token::NumericLiteral(4),
+            }),
+            Token::NumericLiteral(4).spanned(Span {
                 line: 1,
                 column: 28,
-            },
-            TokenWithLocation {
-                token: Token::BinaryOperator(BinaryOperator::Subtract),
+            }),
+            Token::BinaryOperator(BinaryOperator::Subtract).spanned(Span {
                 line: 1,
                 column: 30,
-            },
-            TokenWithLocation {
-                token: Token::NumericLiteral(3),
+            }),
+            Token::NumericLiteral(3).spanned(Span {
                 line: 1,
                 column: 32,
-            },
-            TokenWithLocation {
-                token: Token::RightParen,
+            }),
+            Token::RightParen.spanned(Span {
                 line: 1,
                 column: 33,
-            },
-            TokenWithLocation {
-                token: Token::RightParen,
+            }),
+            Token::RightParen.spanned(Span {
                 line: 1,
                 column: 34,
-            },
-            TokenWithLocation {
-                token: Token::Semicolon,
+            }),
+            Token::Semicolon.spanned(Span {
                 line: 1,
                 column: 35,
-            },
-            TokenWithLocation {
-                token: Token::EOF,
+            }),
+            Token::EOF.spanned(Span {
                 line: 1,
                 column: 36,
-            },
+            }),
         ];
         assert_eq!(tokens, expected_tokens);
     }
@@ -231,46 +175,35 @@ mod tests {
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize();
         let expected_tokens = vec![
-            TokenWithLocation {
-                token: Token::Identifier("var".to_string()),
-                line: 1,
-                column: 3,
-            },
-            TokenWithLocation {
-                token: Token::Identifier("testvar".to_string()),
+            Token::Identifier("var".to_string()).spanned(Span { line: 1, column: 3 }),
+            Token::Identifier("testvar".to_string()).spanned(Span {
                 line: 1,
                 column: 11,
-            },
-            TokenWithLocation {
-                token: Token::Colon,
+            }),
+            Token::Colon.spanned(Span {
                 line: 1,
                 column: 12,
-            },
-            TokenWithLocation {
-                token: Token::Identifier("bool".to_string()),
+            }),
+            Token::Identifier("bool".to_string()).spanned(Span {
                 line: 1,
                 column: 17,
-            },
-            TokenWithLocation {
-                token: Token::Assign,
+            }),
+            Token::Assign.spanned(Span {
                 line: 1,
                 column: 19,
-            },
-            TokenWithLocation {
-                token: Token::Identifier("testvar".to_string()),
+            }),
+            Token::Identifier("testvar".to_string()).spanned(Span {
                 line: 1,
                 column: 27,
-            },
-            TokenWithLocation {
-                token: Token::Semicolon,
+            }),
+            Token::Semicolon.spanned(Span {
                 line: 1,
                 column: 28,
-            },
-            TokenWithLocation {
-                token: Token::EOF,
+            }),
+            Token::EOF.spanned(Span {
                 line: 1,
                 column: 29,
-            },
+            }),
         ];
         assert_eq!(tokens, expected_tokens);
     }
@@ -280,81 +213,63 @@ mod tests {
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize();
         let expected_tokens = vec![
-            TokenWithLocation {
-                token: Token::Identifier("var".to_string()),
-                line: 1,
-                column: 3,
-            },
-            TokenWithLocation {
-                token: Token::Identifier("testvar".to_string()),
+            Token::Identifier("var".to_string()).spanned(Span { line: 1, column: 3 }),
+            Token::Identifier("testvar".to_string()).spanned(Span {
                 line: 1,
                 column: 11,
-            },
-            TokenWithLocation {
-                token: Token::Colon,
+            }),
+            Token::Colon.spanned(Span {
                 line: 1,
                 column: 12,
-            },
-            TokenWithLocation {
-                token: Token::Identifier("bool".to_string()),
+            }),
+            Token::Identifier("bool".to_string()).spanned(Span {
                 line: 1,
                 column: 17,
-            },
-            TokenWithLocation {
-                token: Token::Assign,
+            }),
+            Token::Assign.spanned(Span {
                 line: 1,
                 column: 19,
-            },
-            TokenWithLocation {
-                token: Token::BooleanLiteral(true),
+            }),
+            Token::BooleanLiteral(true).spanned(Span {
                 line: 1,
                 column: 24,
-            },
-            TokenWithLocation {
-                token: Token::Semicolon,
+            }),
+            Token::Semicolon.spanned(Span {
                 line: 1,
                 column: 25,
-            },
-            TokenWithLocation {
-                token: Token::Identifier("var".to_string()),
+            }),
+            Token::Identifier("var".to_string()).spanned(Span {
                 line: 1,
                 column: 29,
-            },
-            TokenWithLocation {
-                token: Token::Identifier("testvar".to_string()),
+            }),
+            Token::Identifier("testvar".to_string()).spanned(Span {
                 line: 1,
                 column: 37,
-            },
-            TokenWithLocation {
-                token: Token::Colon,
+            }),
+            Token::Colon.spanned(Span {
                 line: 1,
                 column: 38,
-            },
-            TokenWithLocation {
-                token: Token::Identifier("bool".to_string()),
+            }),
+            Token::Identifier("bool".to_string()).spanned(Span {
                 line: 1,
                 column: 43,
-            },
-            TokenWithLocation {
-                token: Token::Assign,
+            }),
+            Token::Assign.spanned(Span {
                 line: 1,
                 column: 45,
-            },
-            TokenWithLocation {
-                token: Token::BooleanLiteral(false),
+            }),
+            Token::BooleanLiteral(false).spanned(Span {
                 line: 1,
                 column: 51,
-            },
-            TokenWithLocation {
-                token: Token::Semicolon,
+            }),
+            Token::Semicolon.spanned(Span {
                 line: 1,
                 column: 52,
-            },
-            TokenWithLocation {
-                token: Token::EOF,
+            }),
+            Token::EOF.spanned(Span {
                 line: 1,
                 column: 53,
-            },
+            }),
         ];
         assert_eq!(tokens, expected_tokens);
     }

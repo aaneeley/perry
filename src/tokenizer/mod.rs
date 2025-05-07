@@ -1,12 +1,14 @@
 pub mod test;
 
-use crate::common::token::{BinaryOperator, Token, TokenWithLocation, UnaryOperator};
+use crate::common::{
+    ast::{Span, Spannable},
+    token::{BinaryOperator, SpannedToken, Token, UnaryOperator},
+};
 
 pub struct Lexer {
     input: String,
     position: usize,
-    line: usize,
-    column: usize,
+    span: Span,
 }
 
 impl Lexer {
@@ -14,8 +16,7 @@ impl Lexer {
         Lexer {
             input,
             position: 0,
-            line: 1,
-            column: 0,
+            span: Span { line: 1, column: 0 },
         }
     }
 
@@ -29,10 +30,10 @@ impl Lexer {
         let current_char = self.peek_next();
         // Update position
         if current_char == Some('\n') {
-            self.line += 1;
-            self.column = 0;
+            self.span.line += 1;
+            self.span.column = 0;
         } else {
-            self.column += 1;
+            self.span.column += 1;
         }
         self.position += current_char.map_or(0, |c| c.len_utf8());
         current_char
@@ -50,17 +51,13 @@ impl Lexer {
         }
     }
 
-    fn next_token(&mut self) -> TokenWithLocation {
+    fn next_token(&mut self) -> SpannedToken {
         self.skip_empty();
 
         let pn = self.peek_next();
 
         if pn.is_none() {
-            return TokenWithLocation {
-                token: Token::EOF,
-                line: self.line,
-                column: self.column + 1,
-            };
+            return Token::EOF.spanned(self.span);
         }
 
         let peeked = pn.unwrap();
@@ -158,7 +155,7 @@ impl Lexer {
             }
         };
 
-        token.with_location(self.line, self.column)
+        token.spanned(self.span)
     }
 
     fn consume_numeric_literal(&mut self) -> Token {
@@ -207,13 +204,13 @@ impl Lexer {
         }
     }
 
-    pub fn tokenize(&mut self) -> Vec<TokenWithLocation> {
-        let mut tokens: Vec<TokenWithLocation> = Vec::new();
+    pub fn tokenize(&mut self) -> Vec<SpannedToken> {
+        let mut tokens: Vec<SpannedToken> = Vec::new();
 
         loop {
-            let token_with_location = self.next_token();
-            tokens.push(token_with_location.clone());
-            if token_with_location.token == Token::EOF {
+            let token = self.next_token();
+            tokens.push(token.clone());
+            if token.as_ref() == &Token::EOF {
                 break;
             }
         }

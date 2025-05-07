@@ -1,3 +1,5 @@
+use super::ast::{Spannable, WithSpan};
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Identifier(String),
@@ -38,22 +40,10 @@ pub enum UnaryOperator {
     Not,
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct TokenWithLocation {
-    pub token: Token,
-    pub line: usize,
-    pub column: usize,
-}
+pub type SpannedToken = WithSpan<Token>;
+impl Spannable for Token {}
 
 impl Token {
-    pub fn with_location(self, line: usize, column: usize) -> TokenWithLocation {
-        TokenWithLocation {
-            token: self,
-            line,
-            column,
-        }
-    }
-
     pub fn get_binary_operator(&self) -> Option<BinaryOperator> {
         match self {
             Token::BinaryOperator(op) => Some(*op),

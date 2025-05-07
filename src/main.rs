@@ -16,7 +16,9 @@ fn main() {
     let mut parser = Parser::new(tokens);
     let ast = parser.parse();
 
-    println!("{:#?}", ast);
+    for statement in ast.body {
+        println!("{:#?}", statement);
+    }
 }
 
 fn read_file(filename: &str) -> io::Result<String> {
