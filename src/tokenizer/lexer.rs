@@ -66,6 +66,10 @@ impl Lexer {
             'a'..='z' | 'A'..='Z' | '_' => self.consume_identifier(),
             '0'..='9' => self.consume_numeric_literal(),
             '"' => self.consume_string_literal(),
+            '=' => {
+                self.next_char();
+                Token::Equal
+            }
             '+' => {
                 self.next_char();
                 Token::BinaryOperator(BinaryOperator::Add)

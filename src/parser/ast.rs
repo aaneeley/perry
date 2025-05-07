@@ -83,6 +83,7 @@ pub struct Parser {
 }
 
 impl Parser {
+    // Creates a new Parser instance with the provided tokens
     pub fn new(tokens: Vec<TokenWithLocation>) -> Self {
         Self {
             tokens,
@@ -90,14 +91,17 @@ impl Parser {
         }
     }
 
+    // Returns a reference to the current token without consuming it
     fn peek(&self) -> &TokenWithLocation {
         &self.tokens[self.position]
     }
 
+    // Advances the parser to the next token
     fn advance(&mut self) {
         self.position += 1;
     }
 
+    // Parses a primary expression (e.g., literal, identifier, function call, or parenthesized expression)
     fn parse_primary(&mut self) -> Expression {
         match self.peek().token.clone() {
             Token::StringLiteral(value) => {
@@ -140,6 +144,7 @@ impl Parser {
         }
     }
 
+    // Parses an expression using precedence climbing
     fn parse_expression(&mut self, min_prec: u8) -> Expression {
         let mut left = self.parse_primary();
         loop {
@@ -167,36 +172,54 @@ impl Parser {
         left
     }
 
+    fn parse_variable(&mut self) -> Statement {
+        if let Token::Identifier(name) = self.peek().token.clone() {
+            self.advance();
+            self.expect(Token::Equal);
+            let value = self.parse_expression(0);
+            self.expect(Token::Semicolon);
+            return Statement::Variable(VariableDecl { name, value });
+        }
+        panic!(
+            "Invalid name for variable declaration {:?}",
+            self.peek().token.clone()
+        );
+    }
+
+    // Parses a statement (e.g., function call)
     fn parse_statement(&mut self) -> Statement {
-        let token = self.peek();
+        let token = self.peek().clone();
         // All statements start with an identifier
         if let Token::Identifier(name) = token.token.clone() {
             self.advance(); // consume identifier
-            if self.peek().token == Token::LeftParen {
-                // Function call statement
-                self.expect(Token::LeftParen);
-                let mut args = Vec::new();
-                if self.peek().token != Token::RightParen {
-                    args.push(self.parse_expression(0)); // Parse first argument
-                    while self.peek().token == Token::Comma {
-                        self.advance(); // consume comma
-                        args.push(self.parse_expression(0)); // Parse next argument
+            return match name.as_str() {
+                "var" => self.parse_variable(),
+                // "if" => self.parse_if(),
+                // "return" => self.parse_return(),
+                _ => {
+                    self.expect(Token::LeftParen);
+                    let mut args = Vec::new();
+                    if self.peek().token != Token::RightParen {
+                        args.push(self.parse_expression(0)); // Parse first argument
+                        while self.peek().token == Token::Comma {
+                            self.advance(); // consume comma
+                            args.push(self.parse_expression(0)); // Parse next argument
+                        }
                     }
+                    // Consume end of statement
+                    self.expect(Token::RightParen);
+                    self.expect(Token::Semicolon);
+                    Statement::Expr(Expression::FunctionCall(Box::new(FunctionCall {
+                        callee: name,
+                        args,
+                    })))
                 }
-                // Consume end of statement
-                self.expect(Token::RightParen);
-                self.expect(Token::Semicolon);
-                return Statement::Expr(Expression::FunctionCall(Box::new(FunctionCall {
-                    callee: name,
-                    args,
-                })));
-            }
-            panic!("Statement type not implemented");
+            };
         }
         panic!("Invalid token type for statement {:?}", token.token.clone());
     }
 
-    // Helper method to expect a specific token and consume it
+    // Expects a specific token and consumes it, panicking if the token doesn't match
     fn expect(&mut self, expected: Token) {
         let token = self.peek().token.clone();
         if token != expected {
@@ -205,6 +228,7 @@ impl Parser {
         self.advance(); // consume the token
     }
 
+    // Parses the entire input and returns a vector of statements
     pub fn parse(&mut self) -> Vec<Statement> {
         let mut statements: Vec<Statement> = Vec::new();
         while self.peek().token != Token::EOF {
