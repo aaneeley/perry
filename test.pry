@@ -1,4 +1,4 @@
-print("Hello", "World");
+println("Hello", "World");
 var a: int = 3 + 5;
 var b: string = "Hello";
-print(a * 2);
+println(a * 2);

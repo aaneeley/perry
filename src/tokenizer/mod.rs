@@ -1,4 +1,4 @@
-pub mod lexer;
+pub mod test;
 
 use crate::common::token::{BinaryOperator, Token, TokenWithLocation, UnaryOperator};
 
@@ -188,6 +188,7 @@ impl Lexer {
         Token::StringLiteral(literal)
     }
 
+    // Consumes an identifier or boolean literal
     fn consume_identifier(&mut self) -> Token {
         let mut identifier = String::new();
         while let Some(next) = self.peek_next() {
@@ -199,7 +200,11 @@ impl Lexer {
                 _ => break,
             }
         }
-        Token::Identifier(identifier)
+        match identifier.as_str() {
+            "true" => Token::BooleanLiteral(true),
+            "false" => Token::BooleanLiteral(false),
+            _ => Token::Identifier(identifier),
+        }
     }
 
     pub fn tokenize(&mut self) -> Vec<TokenWithLocation> {

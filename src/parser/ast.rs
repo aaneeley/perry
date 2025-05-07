@@ -1,10 +1,8 @@
 #![allow(dead_code, unused_variables)]
 
-use core::panic;
-
 use crate::common::token::{BinaryOperator, Token, TokenWithLocation};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Expression {
     Binary(Box<BinaryExpression>),
     Literal(LiteralExpression),
@@ -12,7 +10,7 @@ pub enum Expression {
     VariableRef(Box<VariableRef>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Statement {
     Function(FunctionDecl),
     Variable(VariableDecl),
@@ -21,58 +19,58 @@ pub enum Statement {
     Expr(Expression), // To allow void expressions in function body
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct VariableDecl {
     name: String,
     value: Expression,
     type_name: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct FunctionDecl {
     name: String,
     params: Vec<String>, // TODO: Make this a struct with type
     body: Vec<Statement>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct FunctionCall {
-    callee: String,
-    args: Vec<Expression>,
+    pub callee: String,
+    pub args: Vec<Expression>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct VariableRef {
     name: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct BinaryExpression {
     left: Expression,
     right: Expression,
     operator: BinaryOperator,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct LiteralExpression {
     pub value: LiteralValue,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum LiteralValue {
     String(String),
     Number(i32),
     Bool(bool),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct IfStatement {
     condition: Expression,
     then_body: Vec<Statement>,
     else_body: Vec<Statement>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ReturnStatement {
     value: Expression,
 }
@@ -115,6 +113,12 @@ impl Parser {
                 self.advance();
                 Expression::Literal(LiteralExpression {
                     value: LiteralValue::Number(value),
+                })
+            }
+            Token::BooleanLiteral(value) => {
+                self.advance();
+                Expression::Literal(LiteralExpression {
+                    value: LiteralValue::Bool(value),
                 })
             }
             Token::Identifier(name) => {
@@ -194,7 +198,7 @@ impl Parser {
 
     // Parses a statement (e.g., function call)
     fn parse_statement(&mut self) -> Statement {
-        let token = &self.peek();
+        let token = self.peek().clone();
         // All statements start with an identifier
         if let Token::Identifier(name) = token.token.clone() {
             self.advance(); // consume identifier

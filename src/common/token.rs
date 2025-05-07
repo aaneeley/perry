@@ -1,11 +1,9 @@
-use std::fmt::Display;
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Identifier(String),
     NumericLiteral(i32),
     StringLiteral(String),
-    LogicalLiteral(bool),
+    BooleanLiteral(bool),
     BinaryOperator(BinaryOperator),
     UnaryOperator(UnaryOperator),
     Comma,
@@ -40,7 +38,7 @@ pub enum UnaryOperator {
     Not,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TokenWithLocation {
     pub token: Token,
     pub line: usize,
