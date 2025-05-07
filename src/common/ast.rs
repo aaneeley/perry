@@ -12,7 +12,7 @@ pub enum Expression {
 pub enum Statement {
     // Function(FunctionDecl),
     Variable(VariableDecl),
-    // If(IfStatement),
+    If(IfStatement),
     // Return(ReturnStatement),
     Expr(Expression), // To allow void expressions in function body
 }
@@ -72,7 +72,7 @@ pub enum LiteralValue {
 pub struct IfStatement {
     pub condition: Expression,
     pub then_body: Vec<Statement>,
-    pub else_body: Vec<Statement>,
+    pub else_body: Option<Box<IfStatement>>,
 }
 
 #[derive(Debug, PartialEq)]

@@ -1,5 +1,7 @@
 pub mod test;
 
+use std::ops::RangeInclusive;
+
 use crate::common::token::{Token, TokenWithLocation};
 
 use crate::common::ast::*;
@@ -125,16 +127,53 @@ impl Parser {
         panic!("Invalid variable declaration");
     }
 
+    // Parses an if statement.
+    // Calls itself recursively for each else if statement.
+    fn parse_if(&mut self) -> IfStatement {
+        self.expect(Token::LeftParen);
+        let condition = self.parse_expression(0);
+        self.expect(Token::RightParen);
+        self.expect(Token::LeftBrace);
+        let then_body = self.parse_body();
+        let else_body: Option<Box<IfStatement>> =
+            if self.peek().token == Token::Identifier("else".to_string()) {
+                self.advance();
+                if self.peek().token == Token::Identifier("if".to_string()) {
+                    self.advance();
+                    Some(Box::new(self.parse_if()))
+                } else {
+                    self.expect(Token::LeftBrace);
+                    Some(Box::new(IfStatement {
+                        condition: Expression::Literal(LiteralExpression {
+                            value: LiteralValue::Bool(true),
+                        }),
+                        then_body: self.parse_body(),
+                        else_body: None,
+                    }))
+                }
+            } else {
+                None
+            };
+        IfStatement {
+            condition,
+            then_body,
+            else_body,
+        }
+    }
+
     // Parses a statement (e.g., function call)
     fn parse_statement(&mut self) -> Statement {
         let token = self.peek().clone();
+        println!("{:?}", token);
         // All statements start with an identifier
         if let Token::Identifier(name) = token.token.clone() {
             self.advance(); // consume identifier
             return match name.as_str() {
                 "var" => self.parse_variable(),
-                // "if" => self.parse_if(),
+                "if" => Statement::If(self.parse_if()),
                 // "return" => self.parse_return(),
+                // "while" => self.parse_while(),
+                // "func" => self.parse_func(),
                 _ => {
                     self.expect(Token::LeftParen);
                     let mut args = Vec::new();
@@ -168,10 +207,13 @@ impl Parser {
     }
 
     // Parses the entire input and returns a vector of statements
-    pub fn parse(&mut self) -> Vec<Statement> {
+    pub fn parse_body(&mut self) -> Vec<Statement> {
         let mut statements: Vec<Statement> = Vec::new();
-        while self.peek().token != Token::EOF {
+        while self.peek().token != Token::EOF && self.peek().token != Token::RightBrace {
             statements.push(self.parse_statement());
+        }
+        if self.peek().token == Token::RightBrace {
+            self.advance();
         }
         statements
     }

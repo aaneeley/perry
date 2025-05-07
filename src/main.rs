@@ -14,7 +14,7 @@ fn main() {
     let tokens = lexer.tokenize();
 
     let mut parser = Parser::new(tokens);
-    let ast = parser.parse();
+    let ast = parser.parse_body();
 
     println!("{:#?}", ast);
 }
