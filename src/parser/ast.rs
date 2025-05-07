@@ -1,7 +1,6 @@
-#![allow(dead_code)]
+#![allow(dead_code, unused_variables)]
 
 use core::panic;
-use std::f32::MIN_10_EXP;
 
 use crate::common::token::{BinaryOperator, Token, TokenWithLocation};
 
@@ -95,18 +94,8 @@ impl Parser {
         &self.tokens[self.position]
     }
 
-    fn peek_next(&self) -> &TokenWithLocation {
-        &self.tokens[self.position + 1]
-    }
-
     fn advance(&mut self) {
         self.position += 1;
-    }
-
-    fn advance_to_semicolon(&mut self) {
-        while self.peek().token != Token::Semicolon {
-            self.advance();
-        }
     }
 
     fn parse_primary(&mut self) -> Expression {
@@ -135,7 +124,7 @@ impl Parser {
                             args.push(self.parse_expression(0));
                         }
                     }
-                    // self.expect(Token::RightParen);
+                    self.expect(Token::RightParen);
                     Expression::FunctionCall(Box::new(FunctionCall { callee: name, args }))
                 } else {
                     Expression::VariableRef(Box::new(VariableRef { name }))
@@ -144,7 +133,7 @@ impl Parser {
             Token::LeftParen => {
                 self.advance();
                 let expr = self.parse_expression(0);
-                // self.expect(Token::RightParen);
+                self.expect(Token::RightParen);
                 expr
             }
             _ => panic!("Expression token invalid {:?}", self.peek().token),
@@ -153,10 +142,8 @@ impl Parser {
 
     fn parse_expression(&mut self, min_prec: u8) -> Expression {
         let mut left = self.parse_primary();
-
         loop {
             let token = self.peek();
-
             // Early exit if it's not a binary operator
             let op = match token.token.get_binary_operator() {
                 Some(op) => op,
@@ -164,23 +151,19 @@ impl Parser {
             };
 
             let op_prec = op.get_precedence();
-
             if op_prec < min_prec {
                 break;
             }
 
             self.advance(); // consume the operator
-
             // Left-associative: use op_prec + 1
             let right = self.parse_expression(op_prec + 1);
-
             left = Expression::Binary(Box::new(BinaryExpression {
                 left,
                 operator: op,
                 right,
             }));
         }
-
         left
     }
 
@@ -188,18 +171,21 @@ impl Parser {
         let token = self.peek();
         // All statements start with an identifier
         if let Token::Identifier(name) = token.token.clone() {
-            self.advance();
+            self.advance(); // consume identifier
             if self.peek().token == Token::LeftParen {
-                let mut args: Vec<Expression> = Vec::new();
-                loop {
-                    if self.peek().token == Token::RightParen {
-                        break;
+                // Function call statement
+                self.expect(Token::LeftParen);
+                let mut args = Vec::new();
+                if self.peek().token != Token::RightParen {
+                    args.push(self.parse_expression(0)); // Parse first argument
+                    while self.peek().token == Token::Comma {
+                        self.advance(); // consume comma
+                        args.push(self.parse_expression(0)); // Parse next argument
                     }
-                    self.advance(); // Advance onto the expression
-                    args.push(self.parse_expression(0));
                 }
-                self.advance_to_semicolon();
-                self.advance(); // Advance past semicolon
+                // Consume end of statement
+                self.expect(Token::RightParen);
+                self.expect(Token::Semicolon);
                 return Statement::Expr(Expression::FunctionCall(Box::new(FunctionCall {
                     callee: name,
                     args,
@@ -208,6 +194,15 @@ impl Parser {
             panic!("Statement type not implemented");
         }
         panic!("Invalid token type for statement {:?}", token.token.clone());
+    }
+
+    // Helper method to expect a specific token and consume it
+    fn expect(&mut self, expected: Token) {
+        let token = self.peek().token.clone();
+        if token != expected {
+            panic!("Expected {:?}, got {:?}", expected, token);
+        }
+        self.advance(); // consume the token
     }
 
     pub fn parse(&mut self) -> Vec<Statement> {
