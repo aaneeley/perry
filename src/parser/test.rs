@@ -2,7 +2,7 @@
 
 use crate::Lexer;
 use crate::Parser;
-use crate::parser::ast::*;
+use crate::parser::*;
 
 mod tests {
 

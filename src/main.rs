@@ -4,7 +4,7 @@ mod tokenizer;
 use std::fs::File;
 use std::io::{self, Read};
 
-use parser::ast::Parser;
+use parser::Parser;
 use tokenizer::Lexer;
 
 fn main() {

@@ -1,80 +1,8 @@
 pub mod test;
 
-use crate::common::token::{BinaryOperator, Token, TokenWithLocation};
+use crate::common::token::{Token, TokenWithLocation};
 
-#[derive(Debug, PartialEq)]
-pub enum Expression {
-    Binary(Box<BinaryExpression>),
-    Literal(LiteralExpression),
-    FunctionCall(Box<FunctionCall>),
-    VariableRef(Box<VariableRef>),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Statement {
-    Function(FunctionDecl),
-    Variable(VariableDecl),
-    If(IfStatement),
-    Return(ReturnStatement),
-    Expr(Expression), // To allow void expressions in function body
-}
-
-#[derive(Debug, PartialEq)]
-pub struct VariableDecl {
-    name: String,
-    value: Expression,
-    type_name: String,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct FunctionDecl {
-    name: String,
-    params: Vec<String>, // TODO: Make this a struct with type
-    return_type_name: String,
-    body: Vec<Statement>,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct FunctionCall {
-    pub callee: String,
-    pub args: Vec<Expression>,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct VariableRef {
-    name: String,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct BinaryExpression {
-    left: Expression,
-    right: Expression,
-    operator: BinaryOperator,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct LiteralExpression {
-    pub value: LiteralValue,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum LiteralValue {
-    String(String),
-    Number(i32),
-    Bool(bool),
-}
-
-#[derive(Debug, PartialEq)]
-pub struct IfStatement {
-    condition: Expression,
-    then_body: Vec<Statement>,
-    else_body: Vec<Statement>,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct ReturnStatement {
-    value: Expression,
-}
+use crate::common::ast::*;
 
 #[derive(Debug)]
 pub struct Parser {
