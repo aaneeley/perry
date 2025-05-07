@@ -1,4 +1,4 @@
-use crate::common::token::{BinaryOperator, Token, TokenWithLocation};
+use crate::common::token::{BinaryOperator, Token, TokenWithLocation, UnaryOperator};
 
 pub struct Lexer {
     input: String,
@@ -68,7 +68,39 @@ impl Lexer {
             '"' => self.consume_string_literal(),
             '=' => {
                 self.next_char();
-                Token::Equal
+                if self.peek_next() == Some('=') {
+                    self.next_char();
+                    Token::BinaryOperator(BinaryOperator::Equal)
+                } else {
+                    Token::Assign
+                }
+            }
+            '!' => {
+                self.next_char();
+                if self.peek_next() == Some('=') {
+                    self.next_char();
+                    Token::BinaryOperator(BinaryOperator::NotEqual)
+                } else {
+                    Token::UnaryOperator(UnaryOperator::Not)
+                }
+            }
+            '<' => {
+                self.next_char();
+                if self.peek_next() == Some('=') {
+                    self.next_char();
+                    Token::BinaryOperator(BinaryOperator::LessThanOrEqual)
+                } else {
+                    Token::BinaryOperator(BinaryOperator::LessThan)
+                }
+            }
+            '>' => {
+                self.next_char();
+                if self.peek_next() == Some('=') {
+                    self.next_char();
+                    Token::BinaryOperator(BinaryOperator::GreaterThanOrEqual)
+                } else {
+                    Token::BinaryOperator(BinaryOperator::GreaterThan)
+                }
             }
             '+' => {
                 self.next_char();
@@ -105,6 +137,14 @@ impl Lexer {
             ')' => {
                 self.next_char();
                 Token::RightParen
+            }
+            '{' => {
+                self.next_char();
+                Token::LeftBrace
+            }
+            '}' => {
+                self.next_char();
+                Token::RightBrace
             }
             _ => {
                 self.next_char();

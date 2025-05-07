@@ -175,7 +175,7 @@ impl Parser {
     fn parse_variable(&mut self) -> Statement {
         if let Token::Identifier(name) = self.peek().token.clone() {
             self.advance();
-            self.expect(Token::Equal);
+            self.expect(Token::Assign);
             let value = self.parse_expression(0);
             self.expect(Token::Semicolon);
             return Statement::Variable(VariableDecl { name, value });

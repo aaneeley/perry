@@ -1,17 +1,19 @@
 use std::fmt::Display;
 
 #[derive(Debug, PartialEq, Clone)]
-#[allow(dead_code)] // HACK:
 pub enum Token {
     Identifier(String),
     NumericLiteral(i32),
     StringLiteral(String),
     LogicalLiteral(bool),
     BinaryOperator(BinaryOperator),
+    UnaryOperator(UnaryOperator),
     Comma,
-    Equal,
+    Assign,
     LeftParen,
     RightParen,
+    LeftBrace,
+    RightBrace,
     Semicolon,
     EOF,
     Invalid(String),
@@ -24,6 +26,17 @@ pub enum BinaryOperator {
     Multiply,
     Divide,
     Modulo,
+    NotEqual,
+    Equal,
+    GreaterThan,
+    LessThan,
+    GreaterThanOrEqual,
+    LessThanOrEqual,
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum UnaryOperator {
+    Not,
 }
 
 #[derive(Clone, Debug)]
@@ -53,6 +66,12 @@ impl Token {
 impl BinaryOperator {
     pub fn get_precedence(&self) -> u8 {
         match self {
+            BinaryOperator::Equal => 1,
+            BinaryOperator::NotEqual => 1,
+            BinaryOperator::LessThan => 1,
+            BinaryOperator::LessThanOrEqual => 1,
+            BinaryOperator::GreaterThan => 1,
+            BinaryOperator::GreaterThanOrEqual => 1,
             BinaryOperator::Add => 9,
             BinaryOperator::Subtract => 9,
             BinaryOperator::Multiply => 10,
