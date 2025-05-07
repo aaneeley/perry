@@ -1,4 +1,4 @@
-use crate::common::token::{Token, TokenWithLocation};
+use crate::common::token::{BinaryOperator, Token, TokenWithLocation};
 
 pub struct Lexer {
     input: String,
@@ -68,23 +68,23 @@ impl Lexer {
             '"' => self.consume_string_literal(),
             '+' => {
                 self.next_char();
-                Token::Plus
+                Token::BinaryOperator(BinaryOperator::Add)
             }
             '-' => {
                 self.next_char();
-                Token::Minus
+                Token::BinaryOperator(BinaryOperator::Subtract)
             }
             '*' => {
                 self.next_char();
-                Token::Star
+                Token::BinaryOperator(BinaryOperator::Multiply)
             }
             '/' => {
                 self.next_char();
-                Token::Slash
+                Token::BinaryOperator(BinaryOperator::Divide)
             }
             '%' => {
                 self.next_char();
-                Token::Percent
+                Token::BinaryOperator(BinaryOperator::Modulo)
             }
             ';' => {
                 self.next_char();

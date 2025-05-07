@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 
 use core::panic;
+use std::f32::MIN_10_EXP;
 
-use crate::common::token::{Token, TokenWithLocation};
+use crate::common::token::{BinaryOperator, Token, TokenWithLocation};
 
 #[derive(Debug)]
 pub enum Expression {
@@ -65,12 +66,6 @@ pub enum LiteralValue {
 }
 
 #[derive(Debug)]
-pub enum BinaryOperator {
-    Add,
-    Subtract,
-}
-
-#[derive(Debug)]
 pub struct IfStatement {
     condition: Expression,
     then_body: Vec<Statement>,
@@ -96,25 +91,25 @@ impl Parser {
         }
     }
 
-    pub fn peek(&self) -> &TokenWithLocation {
+    fn peek(&self) -> &TokenWithLocation {
         &self.tokens[self.position]
     }
 
-    pub fn peek_next(&self) -> &TokenWithLocation {
+    fn peek_next(&self) -> &TokenWithLocation {
         &self.tokens[self.position + 1]
     }
 
-    pub fn advance(&mut self) {
+    fn advance(&mut self) {
         self.position += 1;
     }
 
-    pub fn advance_to_semicolon(&mut self) {
+    fn advance_to_semicolon(&mut self) {
         while self.peek().token != Token::Semicolon {
             self.advance();
         }
     }
 
-    pub fn parse_expression(&mut self) -> Expression {
+    fn parse_primary(&mut self) -> Expression {
         match self.peek().token.clone() {
             Token::StringLiteral(value) => {
                 self.advance();
@@ -123,19 +118,73 @@ impl Parser {
                 })
             }
             Token::NumericLiteral(value) => {
-                // TODO: actually parse the whole expression
                 self.advance();
                 Expression::Literal(LiteralExpression {
                     value: LiteralValue::Number(value),
                 })
             }
-            // TODO: variable ref
-            // TODO: function call
+            Token::Identifier(name) => {
+                self.advance();
+                if self.peek().token == Token::LeftParen {
+                    self.advance(); // consume '('
+                    let mut args = Vec::new();
+                    if self.peek().token != Token::RightParen {
+                        args.push(self.parse_expression(0));
+                        while self.peek().token == Token::Comma {
+                            self.advance();
+                            args.push(self.parse_expression(0));
+                        }
+                    }
+                    // self.expect(Token::RightParen);
+                    Expression::FunctionCall(Box::new(FunctionCall { callee: name, args }))
+                } else {
+                    Expression::VariableRef(Box::new(VariableRef { name }))
+                }
+            }
+            Token::LeftParen => {
+                self.advance();
+                let expr = self.parse_expression(0);
+                // self.expect(Token::RightParen);
+                expr
+            }
             _ => panic!("Expression token invalid {:?}", self.peek().token),
         }
     }
 
-    pub fn parse_statement(&mut self) -> Statement {
+    fn parse_expression(&mut self, min_prec: u8) -> Expression {
+        let mut left = self.parse_primary();
+
+        loop {
+            let token = self.peek();
+
+            // Early exit if it's not a binary operator
+            let op = match token.token.get_binary_operator() {
+                Some(op) => op,
+                None => break,
+            };
+
+            let op_prec = op.get_precedence();
+
+            if op_prec < min_prec {
+                break;
+            }
+
+            self.advance(); // consume the operator
+
+            // Left-associative: use op_prec + 1
+            let right = self.parse_expression(op_prec + 1);
+
+            left = Expression::Binary(Box::new(BinaryExpression {
+                left,
+                operator: op,
+                right,
+            }));
+        }
+
+        left
+    }
+
+    fn parse_statement(&mut self) -> Statement {
         let token = self.peek();
         // All statements start with an identifier
         if let Token::Identifier(name) = token.token.clone() {
@@ -146,8 +195,8 @@ impl Parser {
                     if self.peek().token == Token::RightParen {
                         break;
                     }
-                    self.advance(); // Advance onto the expression 
-                    args.push(self.parse_expression());
+                    self.advance(); // Advance onto the expression
+                    args.push(self.parse_expression(0));
                 }
                 self.advance_to_semicolon();
                 self.advance(); // Advance past semicolon
