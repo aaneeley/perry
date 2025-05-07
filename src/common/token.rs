@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[derive(Debug, PartialEq, Clone)]
 #[allow(dead_code)] // HACK:
 pub enum Token {
@@ -10,6 +12,7 @@ pub enum Token {
     Star,
     Slash,
     Percent,
+    Comma,
     Equal,
     LeftParen,
     RightParen,
@@ -18,7 +21,7 @@ pub enum Token {
     Invalid(String),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TokenWithLocation {
     pub token: Token,
     pub line: usize,

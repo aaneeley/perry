@@ -4,6 +4,7 @@ mod tokenizer;
 use std::fs::File;
 use std::io::{self, Read};
 
+use parser::ast::Parser;
 use parser::ast::{self, Expression, LiteralExpression, LiteralValue};
 use tokenizer::lexer::Lexer;
 
@@ -16,12 +17,10 @@ fn main() {
     let mut lexer = Lexer::new(input);
     let tokens = lexer.tokenize();
 
-    for token in tokens {
-        println!(
-            "{:?} at line {}, column {}",
-            token.token, token.line, token.column
-        );
-    }
+    let mut parser = Parser::new(tokens);
+    let ast = parser.parse();
+
+    println!("{:?}", ast);
 }
 
 fn read_file(filename: &str) -> io::Result<String> {

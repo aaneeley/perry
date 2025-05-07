@@ -90,6 +90,10 @@ impl Lexer {
                 self.next_char();
                 Token::Semicolon
             }
+            ',' => {
+                self.next_char();
+                Token::Comma
+            }
             '(' => {
                 self.next_char();
                 Token::LeftParen
