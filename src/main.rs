@@ -1,14 +1,21 @@
 mod common;
 mod parser;
 mod tokenizer;
+use std::env;
 use std::fs::File;
 use std::io::{self, Read};
 
 use parser::Parser;
 use tokenizer::Lexer;
 
-fn main() {
-    let input = read_file("./working_examples/factorial.pry").unwrap();
+fn main() -> io::Result<()> {
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        eprintln!("Usage: {} <input_file>", args[0]);
+        std::process::exit(1);
+    }
+
+    let input = read_file(&args[1])?;
     let mut lexer = Lexer::new(input.to_string());
     let tokens = lexer.tokenize().unwrap();
 
@@ -18,6 +25,8 @@ fn main() {
     for statement in ast.unwrap().body {
         println!("{:#?}", statement);
     }
+
+    Ok(())
 }
 
 fn read_file(filename: &str) -> io::Result<String> {
