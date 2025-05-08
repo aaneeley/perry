@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 use super::*;
 
@@ -44,6 +44,40 @@ impl Spannable for Statement {}
 impl Spannable for Expression {}
 
 #[derive(Debug, PartialEq, Clone)]
+pub enum Type {
+    Void,
+    Bool,
+    Int,
+    String,
+    // Array(Box<Type>),
+}
+
+impl FromStr for Type {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "int" => Ok(Type::Int),
+            "bool" => Ok(Type::Bool),
+            "string" => Ok(Type::String),
+            "void" => Ok(Type::Void),
+            _ => Err(format!("Unknown type: {}", s)),
+        }
+    }
+}
+
+impl Display for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Type::Void => write!(f, "void"),
+            Type::Bool => write!(f, "bool"),
+            Type::Int => write!(f, "int"),
+            Type::String => write!(f, "string"),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Binary(Box<BinaryExpression>),
     Literal(LiteralExpression),
@@ -72,21 +106,21 @@ pub struct VariableAssignment {
 pub struct VariableDecl {
     pub name: String,
     pub value: SpannedExpression,
-    pub type_name: String,
+    pub type_: Type,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct FunctionDecl {
     pub name: String,
     pub params: Vec<Parameter>,
-    pub return_type_name: String,
+    pub type_: Type,
     pub body: Vec<SpannedStatement>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Parameter {
     pub name: String,
-    pub type_name: String,
+    pub type_: Type,
 }
 
 #[derive(Debug, PartialEq, Clone)]

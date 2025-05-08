@@ -143,7 +143,7 @@ mod tests {
                     line: 1,
                     column: 25,
                 }),
-                type_name: "bool".to_string(),
+                type_: Type::Bool,
             })
             .spanned(Span {
                 line: 1,
@@ -179,9 +179,9 @@ mod tests {
                 name: "name".to_string(),
                 params: vec![Parameter {
                     name: "n".to_string(),
-                    type_name: "int".to_string(),
+                    type_: Type::Int,
                 }],
-                return_type_name: "int".to_string(),
+                type_: Type::Int,
                 body: vec![
                     Statement::Return(ReturnStatement {
                         value: Expression::VariableRef(Box::new(VariableRef {

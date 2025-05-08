@@ -1,6 +1,7 @@
 pub mod test;
 
 use std::fmt::Display;
+use std::str::FromStr;
 
 use crate::common::token::{SpannedToken, Token};
 
@@ -174,16 +175,15 @@ impl Parser {
                 self.peek_span(),
             ));
         };
+        let type_ = match Type::from_str(&type_name) {
+            Ok(type_) => type_,
+            Err(err) => return Err(SyntaxError::new(err, self.peek_span())),
+        };
         self.advance();
         self.expect(Token::Assign)?;
         let value = self.parse_expression(0)?;
         self.expect(Token::Semicolon)?;
-        Ok(Statement::VarDecl(VariableDecl {
-            name,
-            value,
-            type_name,
-        })
-        .spanned(self.peek_span()))
+        Ok(Statement::VarDecl(VariableDecl { name, value, type_ }).spanned(self.peek_span()))
     }
 
     // Parses an if statement.
@@ -255,13 +255,17 @@ impl Parser {
                 self.peek_span(),
             ));
         };
+        let type_ = match Type::from_str(&return_type_name) {
+            Ok(type_) => type_,
+            Err(err) => return Err(SyntaxError::new(err, self.peek_span())),
+        };
         self.advance();
         self.expect(Token::LeftBrace)?;
         let body = self.parse_body()?;
         Ok(Statement::Function(FunctionDecl {
             name,
             params,
-            return_type_name,
+            type_,
             body,
         })
         .spanned(self.peek_span()))
@@ -318,8 +322,12 @@ impl Parser {
                 self.peek_span(),
             ));
         };
+        let type_ = match Type::from_str(&type_name) {
+            Ok(type_) => type_,
+            Err(err) => return Err(SyntaxError::new(err, self.peek_span())),
+        };
         self.advance();
-        Ok(Parameter { name, type_name })
+        Ok(Parameter { name, type_ })
     }
 
     // Parses a statement (e.g., function call)
