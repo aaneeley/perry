@@ -348,4 +348,114 @@ mod tests {
         ];
         assert_eq!(tokens, expected_tokens);
     }
+
+    #[test]
+    fn test_all_tokens() {
+        let input = r#"ab1"string"123 false + - * / % != == > < >= <=
+        ! , = () {} ; : ?"#
+            .to_string();
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize();
+        let expected = vec![
+            Token::Identifier("ab1".to_string()).spanned(Span { line: 1, column: 3 }),
+            Token::StringLiteral("string".to_string()).spanned(Span {
+                line: 1,
+                column: 11,
+            }),
+            Token::NumericLiteral(123).spanned(Span {
+                line: 1,
+                column: 14,
+            }),
+            Token::BooleanLiteral(false).spanned(Span {
+                line: 1,
+                column: 20,
+            }),
+            Token::BinaryOperator(BinaryOperator::Add).spanned(Span {
+                line: 1,
+                column: 22,
+            }),
+            Token::BinaryOperator(BinaryOperator::Subtract).spanned(Span {
+                line: 1,
+                column: 24,
+            }),
+            Token::BinaryOperator(BinaryOperator::Multiply).spanned(Span {
+                line: 1,
+                column: 26,
+            }),
+            Token::BinaryOperator(BinaryOperator::Divide).spanned(Span {
+                line: 1,
+                column: 28,
+            }),
+            Token::BinaryOperator(BinaryOperator::Modulo).spanned(Span {
+                line: 1,
+                column: 30,
+            }),
+            Token::BinaryOperator(BinaryOperator::NotEqual).spanned(Span {
+                line: 1,
+                column: 33,
+            }),
+            Token::BinaryOperator(BinaryOperator::Equal).spanned(Span {
+                line: 1,
+                column: 36,
+            }),
+            Token::BinaryOperator(BinaryOperator::GreaterThan).spanned(Span {
+                line: 1,
+                column: 38,
+            }),
+            Token::BinaryOperator(BinaryOperator::LessThan).spanned(Span {
+                line: 1,
+                column: 40,
+            }),
+            Token::BinaryOperator(BinaryOperator::GreaterThanOrEqual).spanned(Span {
+                line: 1,
+                column: 43,
+            }),
+            Token::BinaryOperator(BinaryOperator::LessThanOrEqual).spanned(Span {
+                line: 1,
+                column: 46,
+            }),
+            Token::UnaryOperator(UnaryOperator::Not).spanned(Span { line: 2, column: 9 }),
+            Token::Comma.spanned(Span {
+                line: 2,
+                column: 11,
+            }),
+            Token::Assign.spanned(Span {
+                line: 2,
+                column: 13,
+            }),
+            Token::LeftParen.spanned(Span {
+                line: 2,
+                column: 15,
+            }),
+            Token::RightParen.spanned(Span {
+                line: 2,
+                column: 16,
+            }),
+            Token::LeftBrace.spanned(Span {
+                line: 2,
+                column: 18,
+            }),
+            Token::RightBrace.spanned(Span {
+                line: 2,
+                column: 19,
+            }),
+            Token::Semicolon.spanned(Span {
+                line: 2,
+                column: 21,
+            }),
+            Token::Colon.spanned(Span {
+                line: 2,
+                column: 23,
+            }),
+            Token::Invalid("?".to_string()).spanned(Span {
+                line: 2,
+                column: 25,
+            }),
+            Token::EOF.spanned(Span {
+                line: 2,
+                column: 26,
+            }),
+        ];
+        assert_eq!(tokens, expected);
+    }
 }

@@ -222,7 +222,7 @@ impl Lexer {
         let mut identifier = String::new();
         while let Some(next) = self.peek_next() {
             match next {
-                'a'..='z' | 'A'..='Z' | '_' => {
+                'a'..='z' | 'A'..='Z' | '0'..='9' | '_' => {
                     identifier.push(next);
                     self.advance();
                 }
