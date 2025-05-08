@@ -1,6 +1,8 @@
+use std::fmt::Display;
+
 use super::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct Program {
     pub body: Vec<SpannedStatement>,
@@ -27,6 +29,12 @@ pub trait Spannable: Sized {
 impl<T> WithSpan<T> {
     pub fn as_ref(&self) -> &T {
         &self.node
+    }
+}
+
+impl Display for Span {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.line, self.column)
     }
 }
 

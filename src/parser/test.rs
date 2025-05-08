@@ -40,7 +40,7 @@ mod tests {
                 column: 27,
             }),
         ];
-        assert_eq!(ast.body, expected);
+        assert_eq!(ast.unwrap().body, expected);
     }
 
     #[test]
@@ -59,10 +59,10 @@ mod tests {
         let ast = parser.parse();
 
         // Check if body[0].else_body.else_body.then_body[0] is a print
-        if let Statement::If(if_statement) = ast.body[0].node.clone() {
+        if let Statement::If(if_statement) = ast.as_ref().unwrap().body[0].node.clone() {
             walk_if_chain(&if_statement);
         } else {
-            panic!("Top level if invalid {:?}", ast.body[0].node);
+            panic!("Top level if invalid {:?}", ast.unwrap().body[0].node);
         }
     }
 
@@ -122,7 +122,7 @@ mod tests {
             })
             .spanned(Span { line: 5, column: 9 }),
         ];
-        assert_eq!(ast.body, expected);
+        assert_eq!(ast.unwrap().body, expected);
     }
 
     #[test]
@@ -163,7 +163,7 @@ mod tests {
                 column: 42,
             }),
         ];
-        assert_eq!(ast.body, expected);
+        assert_eq!(ast.unwrap().body, expected);
     }
 
     #[test]
@@ -202,7 +202,7 @@ mod tests {
                 column: 35,
             }),
         ];
-        assert_eq!(ast.body, expected);
+        assert_eq!(ast.unwrap().body, expected);
     }
 
     #[test]
@@ -230,6 +230,6 @@ mod tests {
                 column: 18,
             }),
         ];
-        assert_eq!(ast.body, expected);
+        assert_eq!(ast.unwrap().body, expected);
     }
 }

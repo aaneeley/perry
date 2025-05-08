@@ -21,7 +21,7 @@ fn main() {
     let mut parser = Parser::new(tokens);
     let ast = parser.parse();
 
-    for statement in ast.body {
+    for statement in ast.unwrap().body {
         println!("{:#?}", statement);
     }
 }
