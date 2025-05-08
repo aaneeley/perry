@@ -8,8 +8,8 @@ mod tests {
     #[test]
     fn token_simple_print() {
         let input = r#"print("Hello", "World!");"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let expected_tokens = vec![
             Token::Identifier("print".to_string()).spanned(Span { line: 1, column: 5 }),
             Token::LeftParen.spanned(Span { line: 1, column: 6 }),
@@ -45,8 +45,8 @@ mod tests {
     fn token_single_line_comment_skip() {
         let input = r#"print("Hello", "World!"); // comment 123 ([]}};; +- comment
         // comment 123 ([]}};; +- comment"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let expected_tokens = vec![
             Token::Identifier("print".to_string()).spanned(Span { line: 1, column: 5 }),
             Token::LeftParen.spanned(Span { line: 1, column: 6 }),
@@ -82,8 +82,8 @@ mod tests {
     fn token_multi_line_comment_skip() {
         let input = r#"print("Hello",/*Comment*/ "World!"); /* comment 123 ([]}};; +- comment
          comment 123 ([]}};; +- comment*/"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let expected_tokens = vec![
             Token::Identifier("print".to_string()).spanned(Span { line: 1, column: 5 }),
             Token::LeftParen.spanned(Span { line: 1, column: 6 }),
@@ -119,8 +119,8 @@ mod tests {
     #[test]
     fn token_artihmetic_print() {
         let input = r#"println((1 + 2) * 3 / 4);"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let expected_tokens = vec![
             Token::Identifier("println".to_string()).spanned(Span { line: 1, column: 7 }),
             Token::LeftParen.spanned(Span { line: 1, column: 8 }),
@@ -176,8 +176,8 @@ mod tests {
     #[test]
     fn token_arithmetic_bool_variable() {
         let input = r#"var testvar: bool = (5 >= (4 - 3));"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let expected_tokens = vec![
             Token::Identifier("var".to_string()).spanned(Span { line: 1, column: 3 }),
             Token::Identifier("testvar".to_string()).spanned(Span {
@@ -247,8 +247,8 @@ mod tests {
     #[test]
     fn token_variable_reference() {
         let input = r#"var testvar: bool = testvar;"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let expected_tokens = vec![
             Token::Identifier("var".to_string()).spanned(Span { line: 1, column: 3 }),
             Token::Identifier("testvar".to_string()).spanned(Span {
@@ -285,8 +285,8 @@ mod tests {
     #[test]
     fn token_boolean_variable() {
         let input = r#"var testvar: bool = true; var testvar: bool = false;"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let expected_tokens = vec![
             Token::Identifier("var".to_string()).spanned(Span { line: 1, column: 3 }),
             Token::Identifier("testvar".to_string()).spanned(Span {
@@ -354,8 +354,8 @@ mod tests {
         let input = r#"ab1"string"123 false + - * / % != == > < >= <=
         ! , = () {} ; : ="#
             .to_string();
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let expected = vec![
             Token::Identifier("ab1".to_string()).spanned(Span { line: 1, column: 3 }),
             Token::StringLiteral("string".to_string()).spanned(Span {
@@ -462,8 +462,8 @@ mod tests {
     #[test]
     fn test_invalid_symbol() {
         let input = r#"print("Hello", "World!"?"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize();
         assert!(tokens.is_err());
     }
 }

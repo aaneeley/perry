@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use crate::{parser::Parser, tokenizer::Lexer};
+use crate::{parser::Parser, tokenizer::Tokenizer};
 
 use super::Analyzer;
 
@@ -11,8 +11,8 @@ mod tests {
     #[test]
     fn valid_variable_declaration() {
         let input = r#"var testvar: bool = 1 > 4;"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         Analyzer::new(&ast).analyze().unwrap();
@@ -21,8 +21,8 @@ mod tests {
     #[test]
     fn mismatched_variable_declaration() {
         let input = r#"var testvar: string = 1 + 4;"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let result = Analyzer::new(&ast).analyze();
@@ -32,8 +32,8 @@ mod tests {
     #[test]
     fn duplicate_variable_declaration() {
         let input = r#"var testvar: int = 1 + 4; var testvar: int = 1 + 4;"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let result = Analyzer::new(&ast).analyze();
@@ -43,8 +43,8 @@ mod tests {
     #[test]
     fn undefined_variable_reference() {
         let input = r#"if(a == b) {}"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let result = Analyzer::new(&ast).analyze();
@@ -59,8 +59,8 @@ mod tests {
             r#"var testvar: bool = true == 4;"#,
         ];
         for input in input_cases {
-            let mut lexer = Lexer::new(input.to_string());
-            let tokens = lexer.tokenize().unwrap();
+            let mut tokenizer = Tokenizer::new(input.to_string());
+            let tokens = tokenizer.tokenize().unwrap();
             let mut parser = Parser::new(tokens);
             let ast = parser.parse().unwrap();
             let result = Analyzer::new(&ast).analyze();
@@ -75,8 +75,8 @@ mod tests {
         } else if (2 > 1) {
         } else {
         }"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let mut analyzer = Analyzer::new(&ast);
@@ -88,8 +88,8 @@ mod tests {
         let input = r#"func name(n: int): int {
             return n;
         }"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let mut analyzer = Analyzer::new(&ast);
@@ -101,8 +101,8 @@ mod tests {
         let input = r#"func name(n: int): int {
             return "string";
         }"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let result = Analyzer::new(&ast).analyze();
@@ -114,8 +114,8 @@ mod tests {
         let input = r#"func name(n: int): void {
             return 1;
         }"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let result = Analyzer::new(&ast).analyze();
@@ -126,8 +126,8 @@ mod tests {
     fn function_with_missing_return() {
         let input = r#"func name(n: int): int {
         }"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let result = Analyzer::new(&ast).analyze();
@@ -137,8 +137,8 @@ mod tests {
     #[test]
     fn return_outside_function() {
         let input = r#"return 1;"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let mut analyzer = Analyzer::new(&ast);
@@ -151,8 +151,8 @@ mod tests {
         let input = r#"
         while (true) {
         }"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let mut analyzer = Analyzer::new(&ast);
@@ -164,8 +164,8 @@ mod tests {
         let input = r#"
         while (4) {
         }"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let mut analyzer = Analyzer::new(&ast);
@@ -179,8 +179,8 @@ mod tests {
             return n;
         }
         name(1);"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let mut analyzer = Analyzer::new(&ast);
@@ -193,8 +193,8 @@ mod tests {
             return n;
         }
         name("Hello");"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let mut analyzer = Analyzer::new(&ast);
@@ -208,8 +208,8 @@ mod tests {
             return n;
         }
         name(1, 2);"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let mut analyzer = Analyzer::new(&ast);
@@ -223,8 +223,8 @@ mod tests {
             return n;
         }
         name();"#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let mut analyzer = Analyzer::new(&ast);

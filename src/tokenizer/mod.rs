@@ -7,7 +7,7 @@ use crate::common::{
     token::{BinaryOperator, SpannedToken, Token, UnaryOperator},
 };
 
-pub struct Lexer {
+pub struct Tokenizer {
     input: String,
     position: usize,
     span: Span,
@@ -31,9 +31,9 @@ impl Display for LexicalError {
     }
 }
 
-impl Lexer {
+impl Tokenizer {
     pub fn new(input: String) -> Self {
-        Lexer {
+        Tokenizer {
             input,
             position: 0,
             span: Span { line: 1, column: 0 },

@@ -8,7 +8,7 @@ use std::io::{self, Read};
 
 use analyzer::Analyzer;
 use parser::Parser;
-use tokenizer::Lexer;
+use tokenizer::Tokenizer;
 
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -18,8 +18,8 @@ fn main() -> io::Result<()> {
     }
 
     let input = read_file(&args[1])?;
-    let mut lexer = Lexer::new(input.to_string());
-    let tokens = lexer.tokenize().unwrap();
+    let mut tokenizer = Tokenizer::new(input.to_string());
+    let tokens = tokenizer.tokenize().unwrap();
 
     let mut parser = Parser::new(tokens);
     let ast = parser.parse().unwrap();
