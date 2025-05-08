@@ -50,7 +50,7 @@ pub enum Statement {
     VarDecl(VariableDecl),
     If(IfStatement),
     Loop(LoopStatement),
-    // Return(ReturnStatement),
+    Return(ReturnStatement),
     Expr(Expression), // To allow void expressions in function body
 }
 

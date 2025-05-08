@@ -252,6 +252,12 @@ impl Parser {
         .spanned(self.peek_span())
     }
 
+    fn parse_return(&mut self) -> SpannedStatement {
+        let value = self.parse_expression(0);
+        self.expect(Token::Semicolon);
+        return Statement::Return(ReturnStatement { value }).spanned(self.peek_span());
+    }
+
     // Parses a parameter
     fn parse_parameter(&mut self) -> Parameter {
         if let Token::Identifier(name) = self.peek().clone() {
@@ -283,7 +289,10 @@ impl Parser {
                 self.advance();
                 Statement::If(self.parse_if()).spanned(self.peek_span())
             }
-            // "return" => self.parse_return(),
+            "return" => {
+                self.advance();
+                self.parse_return()
+            }
             "while" => {
                 self.advance();
                 self.parse_loop()

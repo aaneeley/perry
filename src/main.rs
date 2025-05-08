@@ -8,7 +8,7 @@ use parser::Parser;
 use tokenizer::Lexer;
 
 fn main() {
-    let input = read_file("./working_examples/fizzbuzz.pry").unwrap();
+    let input = read_file("./working_examples/factorial.pry").unwrap();
     // println!("INPUT FILE:\n{}\n", input);
     // let input = r#"
     // while (true) {
