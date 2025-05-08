@@ -83,4 +83,153 @@ mod tests {
             panic!("Invalid if/else chain structure");
         }
     }
+
+    #[test]
+    fn test_loop() {
+        let input = r#"
+        while (true) {
+            println("Hello");
+        }
+        "#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse();
+        let expected = vec![
+            Statement::Loop(LoopStatement {
+                condition: Expression::Literal(LiteralExpression {
+                    value: LiteralValue::Bool(true),
+                })
+                .spanned(Span {
+                    line: 2,
+                    column: 20,
+                }),
+                body: vec![
+                    Statement::Expr(Expression::FunctionCall(Box::new(FunctionCall {
+                        callee: "println".to_string(),
+                        args: vec![
+                            Expression::Literal(LiteralExpression {
+                                value: LiteralValue::String("Hello".to_string()),
+                            })
+                            .spanned(Span {
+                                line: 3,
+                                column: 28,
+                            }),
+                        ],
+                    })))
+                    .spanned(Span { line: 4, column: 9 }),
+                ],
+            })
+            .spanned(Span { line: 5, column: 9 }),
+        ];
+        assert_eq!(ast.body, expected);
+    }
+
+    #[test]
+    fn test_variable() {
+        let input = r#"var testvar: bool = true;testvar = false;"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse();
+        let expected = vec![
+            Statement::VarDecl(VariableDecl {
+                name: "testvar".to_string(),
+                value: Expression::Literal(LiteralExpression {
+                    value: LiteralValue::Bool(true),
+                })
+                .spanned(Span {
+                    line: 1,
+                    column: 25,
+                }),
+                type_name: "bool".to_string(),
+            })
+            .spanned(Span {
+                line: 1,
+                column: 32,
+            }),
+            Statement::VarAssignment(VariableAssignment {
+                name: "testvar".to_string(),
+                value: Expression::Literal(LiteralExpression {
+                    value: LiteralValue::Bool(false),
+                })
+                .spanned(Span {
+                    line: 1,
+                    column: 41,
+                }),
+            })
+            .spanned(Span {
+                line: 1,
+                column: 42,
+            }),
+        ];
+        assert_eq!(ast.body, expected);
+    }
+
+    #[test]
+    fn test_function_declaration() {
+        let input = r#"func name(n: int): int {return n;}"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse();
+        let expected = vec![
+            Statement::Function(FunctionDecl {
+                name: "name".to_string(),
+                params: vec![Parameter {
+                    name: "n".to_string(),
+                    type_name: "int".to_string(),
+                }],
+                return_type_name: "int".to_string(),
+                body: vec![
+                    Statement::Return(ReturnStatement {
+                        value: Expression::VariableRef(Box::new(VariableRef {
+                            name: "n".to_string(),
+                        }))
+                        .spanned(Span {
+                            line: 1,
+                            column: 33,
+                        }),
+                    })
+                    .spanned(Span {
+                        line: 1,
+                        column: 34,
+                    }),
+                ],
+            })
+            .spanned(Span {
+                line: 1,
+                column: 35,
+            }),
+        ];
+        assert_eq!(ast.body, expected);
+    }
+
+    #[test]
+    fn test_function_call() {
+        let input = r#"myFunction(true);"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse();
+        let expected = vec![
+            Statement::Expr(Expression::FunctionCall(Box::new(FunctionCall {
+                callee: "myFunction".to_string(),
+                args: vec![
+                    Expression::Literal(LiteralExpression {
+                        value: LiteralValue::Bool(true),
+                    })
+                    .spanned(Span {
+                        line: 1,
+                        column: 16,
+                    }),
+                ],
+            })))
+            .spanned(Span {
+                line: 1,
+                column: 18,
+            }),
+        ];
+        assert_eq!(ast.body, expected);
+    }
 }
