@@ -3,7 +3,7 @@ pub mod test;
 use std::{collections::HashMap, fmt::Display};
 
 use crate::common::{
-    ast::{self, LiteralValue, Span, SpannedStatement, Type},
+    ast::{self, LiteralValue, Parameter, Span, Spannable, SpannedStatement, Type},
     token::BinaryOperator,
 };
 
@@ -11,15 +11,15 @@ use crate::common::{
 * Semantic analyzer
 *
 * Needs to check for:
-* - Scoping
-* - Duplicate declarations in scope
-* - Use before declaration
+* ✓- Scoping
+* ✓- Duplicate declarations in scope
+* ✓- Use before declaration
 * - Function calls match signature
-* - Expression operands match type
-* - Function return type matches expression
-* - Nonvoid functions must return
+* ✓- Expression operands match type
+* ✓- Function return type matches expression
+* ✓- Nonvoid functions must return
 * - *No unreachable code* (optional)
-* - Literals match the context
+* ✓- Literals match the context
 *
 */
 
@@ -46,6 +46,7 @@ impl Display for SemanticError {
 #[derive(Clone)]
 struct Symbol {
     type_: Type,
+    params: Vec<Parameter>,
 }
 
 #[derive(Clone)]
@@ -61,7 +62,17 @@ impl SymbolTable {
     }
 
     fn add_symbol(&mut self, name: String, type_: Type) {
-        self.tables[0].insert(name, Symbol { type_ });
+        self.tables[0].insert(
+            name,
+            Symbol {
+                type_,
+                params: Vec::new(),
+            },
+        );
+    }
+
+    fn add_function_signature(&mut self, name: String, type_: Type, params: Vec<Parameter>) {
+        self.tables[0].insert(name, Symbol { type_, params });
     }
 
     fn enter_scope(&mut self) {
@@ -163,6 +174,11 @@ impl<'a> Analyzer<'a> {
                 }
             }
             ast::Statement::Function(function) => {
+                self.symbol_table.add_function_signature(
+                    function.name.clone(),
+                    function.type_.clone(),
+                    function.params.clone(),
+                );
                 self.symbol_table.enter_scope();
                 for param in &function.params {
                     self.symbol_table
@@ -201,13 +217,23 @@ impl<'a> Analyzer<'a> {
                 }
                 return Ok(true);
             }
-            //  TODO: loop
-            _ => {
-                //  TODO: remove once all statement types are implemented
-                return Err(SemanticError {
-                    message: format!("invalid statement: {:?}", statement),
-                    span: statement.span,
-                });
+            ast::Statement::Loop(loop_statement) => {
+                self.symbol_table.enter_scope();
+                let condition_type = self.analyze_expression(&loop_statement.condition)?;
+                if condition_type != Type::Bool {
+                    return Err(SemanticError::new(
+                        format!(
+                            "loop condition must resolve to bool, got {}",
+                            condition_type
+                        ),
+                        loop_statement.condition.span,
+                    ));
+                }
+                self.analyze_body(&loop_statement.body)?;
+                self.symbol_table.exit_scope();
+            }
+            ast::Statement::Expr(expr) => {
+                self.analyze_expression(&expr.spanned(statement.span))?;
             }
         }
         Ok(false)
@@ -229,7 +255,7 @@ impl<'a> Analyzer<'a> {
                 // Verify variable is already declared
                 let Some(symbol) = self.symbol_table.lookup(&variable_ref.name) else {
                     return Err(SemanticError {
-                        message: format!("use of undeclared variable {}", variable_ref.name),
+                        message: format!("use of undefined variable {}", variable_ref.name),
                         span: expression.span,
                     });
                 };
@@ -237,13 +263,45 @@ impl<'a> Analyzer<'a> {
             }
             ast::Expression::FunctionCall(function_call) => {
                 // Verify function is already declared
-                let Some(symbol) = self.symbol_table.lookup(&function_call.callee) else {
+                let (expected_params, return_type) = {
+                    let Some(symbol) = self.symbol_table.lookup(&function_call.callee) else {
+                        return Err(SemanticError {
+                            message: format!("use of undefined function {}", &function_call.callee),
+                            span: expression.span,
+                        });
+                    };
+
+                    // Clone only what’s needed and drop the borrow immediately
+                    (symbol.params.clone(), symbol.type_.clone())
+                };
+
+                // Check for number of arguments
+                if function_call.args.len() != expected_params.len() {
                     return Err(SemanticError {
-                        message: format!("use of undeclared variable {}", &function_call.callee),
+                        message: format!(
+                            "function {} expects {} arguments, got {}",
+                            function_call.callee,
+                            expected_params.len(),
+                            function_call.args.len()
+                        ),
                         span: expression.span,
                     });
-                };
-                Ok(symbol.clone().type_)
+                }
+
+                // Check for type of arguments
+                for (index, param) in expected_params.iter().enumerate() {
+                    let arg_type = self.analyze_expression(&function_call.args[index])?;
+                    if arg_type != param.type_ {
+                        return Err(SemanticError {
+                            message: format!(
+                                "type mismatch: expected {}, got {}",
+                                param.type_, arg_type
+                            ),
+                            span: expression.span,
+                        });
+                    }
+                }
+                Ok(return_type)
             }
             ast::Expression::Binary(binary_expression) => {
                 let left_type = self.analyze_expression(&binary_expression.left)?;

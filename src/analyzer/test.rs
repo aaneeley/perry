@@ -30,6 +30,28 @@ mod tests {
     }
 
     #[test]
+    fn duplicate_variable_declaration() {
+        let input = r#"var testvar: int = 1 + 4; var testvar: int = 1 + 4;"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse().unwrap();
+        let result = Analyzer::new(&ast).analyze();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn undefined_variable_reference() {
+        let input = r#"if(a == b) {}"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse().unwrap();
+        let result = Analyzer::new(&ast).analyze();
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn mismatched_binary_expression_types() {
         let input_cases = vec![
             r#"var testvar: int = 1 + true;"#,
@@ -109,6 +131,104 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let ast = parser.parse().unwrap();
         let result = Analyzer::new(&ast).analyze();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn return_outside_function() {
+        let input = r#"return 1;"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse().unwrap();
+        let mut analyzer = Analyzer::new(&ast);
+        let result = analyzer.analyze();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn valid_loop() {
+        let input = r#"
+        while (true) {
+        }"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse().unwrap();
+        let mut analyzer = Analyzer::new(&ast);
+        analyzer.analyze().unwrap();
+    }
+
+    #[test]
+    fn invalid_loop() {
+        let input = r#"
+        while (4) {
+        }"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse().unwrap();
+        let mut analyzer = Analyzer::new(&ast);
+        let result = analyzer.analyze();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn valid_function_call() {
+        let input = r#"func name(n: int): int {
+            return n;
+        }
+        name(1);"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse().unwrap();
+        let mut analyzer = Analyzer::new(&ast);
+        analyzer.analyze().unwrap();
+    }
+
+    #[test]
+    fn mismatched_type_function_call() {
+        let input = r#"func name(n: int): int {
+            return n;
+        }
+        name("Hello");"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse().unwrap();
+        let mut analyzer = Analyzer::new(&ast);
+        let result = analyzer.analyze();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn too_mant_args_function_call() {
+        let input = r#"func name(n: int): int {
+            return n;
+        }
+        name(1, 2);"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse().unwrap();
+        let mut analyzer = Analyzer::new(&ast);
+        let result = analyzer.analyze();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn too_few_args_function_call() {
+        let input = r#"func name(n: int): int {
+            return n;
+        }
+        name();"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse().unwrap();
+        let mut analyzer = Analyzer::new(&ast);
+        let result = analyzer.analyze();
         assert!(result.is_err());
     }
 }
