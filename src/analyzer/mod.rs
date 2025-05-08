@@ -1,3 +1,4 @@
+// TODO: Unreachable code checks
 pub mod test;
 
 use std::{collections::HashMap, fmt::Display};
@@ -6,22 +7,6 @@ use crate::common::{
     ast::{self, LiteralValue, Parameter, Span, Spannable, SpannedStatement, Type},
     token::BinaryOperator,
 };
-
-/**
-* Semantic analyzer
-*
-* Needs to check for:
-* ✓- Scoping
-* ✓- Duplicate declarations in scope
-* ✓- Use before declaration
-* - Function calls match signature
-* ✓- Expression operands match type
-* ✓- Function return type matches expression
-* ✓- Nonvoid functions must return
-* - *No unreachable code* (optional)
-* ✓- Literals match the context
-*
-*/
 
 #[derive(Debug, PartialEq)]
 pub struct SemanticError {
@@ -40,8 +25,6 @@ impl Display for SemanticError {
         write!(f, "SemanticError: {} (at {})", self.message, self.span)
     }
 }
-
-// TODO: Make this global and integrate with the parser
 
 #[derive(Clone)]
 struct Symbol {
