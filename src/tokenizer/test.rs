@@ -6,7 +6,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_simple_print() {
+    fn token_simple_print() {
         let input = r#"print("Hello", "World!");"#;
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
@@ -42,7 +42,7 @@ mod tests {
     }
 
     #[test]
-    fn test_single_line_comment_skip() {
+    fn token_single_line_comment_skip() {
         let input = r#"print("Hello", "World!"); // comment 123 ([]}};; +- comment
         // comment 123 ([]}};; +- comment"#;
         let mut lexer = Lexer::new(input.to_string());
@@ -79,7 +79,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multi_line_comment_skip() {
+    fn token_multi_line_comment_skip() {
         let input = r#"print("Hello",/*Comment*/ "World!"); /* comment 123 ([]}};; +- comment
          comment 123 ([]}};; +- comment*/"#;
         let mut lexer = Lexer::new(input.to_string());
@@ -117,7 +117,7 @@ mod tests {
     }
 
     #[test]
-    fn test_artihmetic_print() {
+    fn token_artihmetic_print() {
         let input = r#"println((1 + 2) * 3 / 4);"#;
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
@@ -174,7 +174,7 @@ mod tests {
     }
 
     #[test]
-    fn test_arithmetic_bool_variable() {
+    fn token_arithmetic_bool_variable() {
         let input = r#"var testvar: bool = (5 >= (4 - 3));"#;
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
@@ -245,7 +245,7 @@ mod tests {
     }
 
     #[test]
-    fn test_variable_reference() {
+    fn token_variable_reference() {
         let input = r#"var testvar: bool = testvar;"#;
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
@@ -283,7 +283,7 @@ mod tests {
         assert_eq!(tokens, expected_tokens);
     }
     #[test]
-    fn test_boolean_variable() {
+    fn token_boolean_variable() {
         let input = r#"var testvar: bool = true; var testvar: bool = false;"#;
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
@@ -350,7 +350,7 @@ mod tests {
     }
 
     #[test]
-    fn test_all_tokens() {
+    fn token_all() {
         let input = r#"ab1"string"123 false + - * / % != == > < >= <=
         ! , = () {} ; : ="#
             .to_string();

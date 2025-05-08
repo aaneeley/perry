@@ -10,7 +10,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_string_print() {
+    fn ast_string_print() {
         let input = r#"println("Hello", "World");"#;
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
@@ -45,7 +45,7 @@ mod tests {
     }
 
     #[test]
-    fn test_if_chaining() {
+    fn ast_if_chaining() {
         let input = r#"
         if (1 > 2) {
             print("A");
@@ -89,7 +89,7 @@ mod tests {
     }
 
     #[test]
-    fn test_loop() {
+    fn ast_loop() {
         let input = r#"
         while (true) {
             println("Hello");
@@ -130,7 +130,7 @@ mod tests {
     }
 
     #[test]
-    fn test_variable() {
+    fn ast_variable() {
         let input = r#"var testvar: bool = true;testvar = false;"#;
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
@@ -171,7 +171,7 @@ mod tests {
     }
 
     #[test]
-    fn test_function_declaration() {
+    fn ast_function_declaration() {
         let input = r#"func name(n: int): int {return n;}"#;
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
@@ -212,7 +212,7 @@ mod tests {
     }
 
     #[test]
-    fn test_function_call() {
+    fn ast_function_call() {
         let input = r#"myFunction(true);"#;
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
@@ -240,7 +240,7 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_symbol() {
+    fn ast_invalid_symbol() {
         let input = r#"print("Hello", "World!";"#;
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
