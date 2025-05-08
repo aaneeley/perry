@@ -42,7 +42,7 @@ mod tests {
     }
 
     #[test]
-    fn test_comment_skipping() {
+    fn test_single_line_comment_skip() {
         let input = r#"print("Hello", "World!"); // comment 123 ([]}};; +- comment
         // comment 123 ([]}};; +- comment"#;
         let mut lexer = Lexer::new(input.to_string());
@@ -75,6 +75,44 @@ mod tests {
                 column: 42,
             }),
         ];
+        assert_eq!(tokens, expected_tokens);
+    }
+
+    #[test]
+    fn test_multi_line_comment_skip() {
+        let input = r#"print("Hello",/*Comment*/ "World!"); /* comment 123 ([]}};; +- comment
+         comment 123 ([]}};; +- comment*/"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize();
+        let expected_tokens = vec![
+            Token::Identifier("print".to_string()).spanned(Span { line: 1, column: 5 }),
+            Token::LeftParen.spanned(Span { line: 1, column: 6 }),
+            Token::StringLiteral("Hello".to_string()).spanned(Span {
+                line: 1,
+                column: 13,
+            }),
+            Token::Comma.spanned(Span {
+                line: 1,
+                column: 14,
+            }),
+            Token::StringLiteral("World!".to_string()).spanned(Span {
+                line: 1,
+                column: 34,
+            }),
+            Token::RightParen.spanned(Span {
+                line: 1,
+                column: 35,
+            }),
+            Token::Semicolon.spanned(Span {
+                line: 1,
+                column: 36,
+            }),
+            Token::EOF.spanned(Span {
+                line: 2,
+                column: 42,
+            }),
+        ];
+
         assert_eq!(tokens, expected_tokens);
     }
 

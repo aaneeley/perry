@@ -1,5 +1,9 @@
 if (1 > 2) {
     // Comme(nt with l)ots of+_== = text 123123 "asdfa"
+    /*
+    09s87d0g / / // this is a comment 
+    NO LITEARALS """"
+    */
     print("A"); // Comme(nt with l)ots of+_== = text 123123 "asdfa"
 } else if (2 > 1) {
     print("B");

@@ -50,15 +50,29 @@ impl Lexer {
             if ch.is_whitespace() {
                 self.advance(); // Skip
             } else if ch == '/' {
-                if self.peek_next_n(1) == Some('/') {
-                    while let Some(ch) = self.peek_next() {
-                        self.advance();
-                        if ch == '\n' {
-                            break;
+                match self.peek_next_n(1) {
+                    Some('/') => {
+                        while let Some(ch) = self.peek_next() {
+                            self.advance();
+                            if ch == '\n' {
+                                break;
+                            }
                         }
                     }
-                } else {
-                    break;
+                    Some('*') => {
+                        self.advance();
+                        self.advance();
+                        while let Some(ch) = self.peek_next() {
+                            self.advance();
+                            if ch == '*' {
+                                if self.peek_next() == Some('/') {
+                                    self.advance();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    _ => break,
                 }
             } else {
                 break;
