@@ -17,7 +17,6 @@ pub enum Token {
     Semicolon,
     Colon,
     EOF,
-    Invalid(String),
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]

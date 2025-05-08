@@ -375,12 +375,7 @@ impl Parser {
         let token = self.peek().clone();
         if token != expected {
             return Err(SyntaxError {
-                message: format!(
-                    "Expected {:?}, got {:?} at {:?}",
-                    expected,
-                    token,
-                    self.peek_span()
-                ),
+                message: format!("Expected {:?}, got {:?}", expected, token),
                 span: self.peek_span(),
             });
         }

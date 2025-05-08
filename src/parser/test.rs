@@ -5,6 +5,7 @@ use crate::Parser;
 use crate::parser::*;
 
 mod tests {
+    use std::panic;
 
     use super::*;
 
@@ -12,7 +13,7 @@ mod tests {
     fn test_string_print() {
         let input = r#"println("Hello", "World");"#;
         let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize();
+        let tokens = lexer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse();
         let expected = vec![
@@ -54,7 +55,7 @@ mod tests {
             print("C");
         }"#;
         let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize();
+        let tokens = lexer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse();
 
@@ -92,7 +93,7 @@ mod tests {
         }
         "#;
         let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize();
+        let tokens = lexer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse();
         let expected = vec![
@@ -129,7 +130,7 @@ mod tests {
     fn test_variable() {
         let input = r#"var testvar: bool = true;testvar = false;"#;
         let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize();
+        let tokens = lexer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse();
         let expected = vec![
@@ -170,7 +171,7 @@ mod tests {
     fn test_function_declaration() {
         let input = r#"func name(n: int): int {return n;}"#;
         let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize();
+        let tokens = lexer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse();
         let expected = vec![
@@ -209,7 +210,7 @@ mod tests {
     fn test_function_call() {
         let input = r#"myFunction(true);"#;
         let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize();
+        let tokens = lexer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse();
         let expected = vec![
@@ -231,5 +232,15 @@ mod tests {
             }),
         ];
         assert_eq!(ast.unwrap().body, expected);
+    }
+
+    #[test]
+    fn test_invalid_symbol() {
+        let input = r#"print("Hello", "World!";"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse();
+        assert!(ast.is_err())
     }
 }

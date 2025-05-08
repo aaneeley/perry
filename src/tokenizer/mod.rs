@@ -1,5 +1,7 @@
 pub mod test;
 
+use std::fmt::Display;
+
 use crate::common::{
     ast::{Span, Spannable},
     token::{BinaryOperator, SpannedToken, Token, UnaryOperator},
@@ -9,6 +11,24 @@ pub struct Lexer {
     input: String,
     position: usize,
     span: Span,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct LexicalError {
+    pub message: String,
+    pub span: Span,
+}
+
+impl LexicalError {
+    pub fn new(message: String, span: Span) -> Self {
+        Self { message, span }
+    }
+}
+
+impl Display for LexicalError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "LexicalError: {} (at {})", self.message, self.span)
+    }
 }
 
 impl Lexer {
@@ -80,20 +100,17 @@ impl Lexer {
         }
     }
 
-    fn next_token(&mut self) -> SpannedToken {
+    fn next_token(&mut self) -> Result<SpannedToken, LexicalError> {
         self.skip_empty();
 
-        let pn = self.peek_next();
-
-        if pn.is_none() {
-            return Token::EOF.spanned(Span {
+        let Some(next_char) = self.peek_next() else {
+            return Ok(Token::EOF.spanned(Span {
                 line: self.span.line,
                 column: self.span.column + 1,
-            });
-        }
+            }));
+        };
 
-        let peeked = pn.unwrap();
-        let token = match peeked {
+        let token = match next_char {
             'a'..='z' | 'A'..='Z' | '_' => self.consume_identifier(),
             '0'..='9' => self.consume_numeric_literal(),
             '"' => self.consume_string_literal(),
@@ -183,11 +200,14 @@ impl Lexer {
             }
             _ => {
                 self.advance();
-                Token::Invalid(peeked.to_string())
+                return Err(LexicalError::new(
+                    format!("invalid symbol: {next_char}"),
+                    self.span,
+                ));
             }
         };
 
-        token.spanned(self.span)
+        Ok(token.spanned(self.span))
     }
 
     fn consume_numeric_literal(&mut self) -> Token {
@@ -236,17 +256,17 @@ impl Lexer {
         }
     }
 
-    pub fn tokenize(&mut self) -> Vec<SpannedToken> {
+    pub fn tokenize(&mut self) -> Result<Vec<SpannedToken>, LexicalError> {
         let mut tokens: Vec<SpannedToken> = Vec::new();
 
         loop {
-            let token = self.next_token();
+            let token = self.next_token()?;
             tokens.push(token.clone());
             if token.as_ref() == &Token::EOF {
                 break;
             }
         }
 
-        tokens
+        Ok(tokens)
     }
 }

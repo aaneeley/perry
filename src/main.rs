@@ -9,14 +9,8 @@ use tokenizer::Lexer;
 
 fn main() {
     let input = read_file("./working_examples/factorial.pry").unwrap();
-    // println!("INPUT FILE:\n{}\n", input);
-    // let input = r#"
-    // while (true) {
-    //     println("Hello");
-    // }
-    // "#;
     let mut lexer = Lexer::new(input.to_string());
-    let tokens = lexer.tokenize();
+    let tokens = lexer.tokenize().unwrap();
 
     let mut parser = Parser::new(tokens);
     let ast = parser.parse();
