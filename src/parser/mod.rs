@@ -24,6 +24,10 @@ impl Parser {
         &self.tokens[self.position].node
     }
 
+    fn peek_next(&self) -> &Token {
+        &self.tokens[self.position + 1].node
+    }
+
     fn peek_span(&self) -> Span {
         self.tokens[self.position].span
     }
@@ -116,24 +120,37 @@ impl Parser {
         left
     }
 
-    fn parse_variable(&mut self) -> SpannedStatement {
-        if let Token::Identifier(name) = self.peek().clone() {
-            self.advance();
-            self.expect(Token::Colon);
-            if let Token::Identifier(type_name) = self.peek().clone() {
-                self.advance();
-                self.expect(Token::Assign);
-                let value = self.parse_expression(0);
-                self.expect(Token::Semicolon);
-                return Statement::Variable(VariableDecl {
-                    name,
-                    value,
-                    type_name,
-                })
-                .spanned(self.peek_span());
-            }
-        }
-        panic!("Invalid variable declaration");
+    fn parse_variable_assignemnt(&mut self) -> SpannedStatement {
+        let Token::Identifier(name) = self.peek().clone() else {
+            panic!("expected identifier, got {:?}", self.peek());
+        };
+        self.advance();
+        self.expect(Token::Assign);
+        let value = self.parse_expression(0);
+        self.expect(Token::Semicolon);
+        return Statement::VarAssignment(VariableAssignment { name, value })
+            .spanned(self.peek_span());
+    }
+
+    fn parse_variable_declaration(&mut self) -> SpannedStatement {
+        let Token::Identifier(name) = self.peek().clone() else {
+            panic!("expected identifier, got {:?}", self.peek());
+        };
+        self.advance();
+        self.expect(Token::Colon);
+        let Token::Identifier(type_name) = self.peek().clone() else {
+            panic!("expected type identifier, got {:?}", self.peek());
+        };
+        self.advance();
+        self.expect(Token::Assign);
+        let value = self.parse_expression(0);
+        self.expect(Token::Semicolon);
+        return Statement::VarDecl(VariableDecl {
+            name,
+            value,
+            type_name,
+        })
+        .spanned(self.peek_span());
     }
 
     // Parses an if statement.
@@ -171,48 +188,131 @@ impl Parser {
         }
     }
 
+    fn parse_loop(&mut self) -> SpannedStatement {
+        self.expect(Token::LeftParen);
+        let condition = self.parse_expression(0);
+        self.expect(Token::RightParen);
+        self.expect(Token::LeftBrace);
+        let body = self.parse_body();
+        Statement::Loop(LoopStatement { condition, body }).spanned(self.peek_span())
+    }
+
+    fn parse_function(&mut self) -> SpannedStatement {
+        let Token::Identifier(name) = self.peek().clone() else {
+            panic!("expected identifier, got {:?}", self.peek());
+        };
+        self.advance();
+        self.expect(Token::LeftParen);
+        let mut params = Vec::new();
+        if self.peek() != &Token::RightParen {
+            params.push(self.parse_parameter());
+            while self.peek() == &Token::Comma {
+                self.advance();
+                params.push(self.parse_parameter());
+            }
+        }
+        self.expect(Token::RightParen);
+        self.expect(Token::Colon);
+        let Token::Identifier(return_type_name) = self.peek().clone() else {
+            panic!("expected return type identifier, got {:?}", self.peek());
+        };
+        self.advance();
+        self.expect(Token::LeftBrace);
+        let body = self.parse_body();
+        Statement::Function(FunctionDecl {
+            name,
+            params,
+            return_type_name,
+            body,
+        })
+        .spanned(self.peek_span())
+    }
+
+    fn parse_function_call(&mut self) -> SpannedStatement {
+        let Token::Identifier(name) = self.peek().clone() else {
+            panic!("expected identifier, got {:?}", self.peek());
+        };
+        self.advance();
+        self.expect(Token::LeftParen);
+        let mut args = Vec::new();
+        if self.peek() != &Token::RightParen {
+            args.push(self.parse_expression(0)); // Parse first argument
+            while self.peek() == &Token::Comma {
+                self.advance(); // consume comma
+                args.push(self.parse_expression(0)); // Parse next argument
+            }
+        }
+        // Consume end of statement
+        self.expect(Token::RightParen);
+        self.expect(Token::Semicolon);
+        Statement::Expr(Expression::FunctionCall(Box::new(FunctionCall {
+            callee: name,
+            args,
+        })))
+        .spanned(self.peek_span())
+    }
+
+    // Parses a parameter
+    fn parse_parameter(&mut self) -> Parameter {
+        if let Token::Identifier(name) = self.peek().clone() {
+            self.advance();
+            self.expect(Token::Colon);
+            if let Token::Identifier(type_name) = self.peek().clone() {
+                self.advance();
+                return Parameter { name, type_name };
+            }
+        }
+        panic!("Invalid parameter at {:?}", self.peek_span());
+    }
+
     // Parses a statement (e.g., function call)
     fn parse_statement(&mut self) -> SpannedStatement {
         let token = self.peek().clone();
-        println!("{:?}", token);
-        // All statements start with an identifier
-        if let Token::Identifier(name) = token.clone() {
-            self.advance(); // consume identifier
-            return match name.as_str() {
-                "var" => self.parse_variable(),
-                "if" => Statement::If(self.parse_if()).spanned(self.peek_span()),
-                // "return" => self.parse_return(),
-                // "while" => self.parse_while(),
-                // "func" => self.parse_func(),
-                _ => {
-                    self.expect(Token::LeftParen);
-                    let mut args = Vec::new();
-                    if self.peek() != &Token::RightParen {
-                        args.push(self.parse_expression(0)); // Parse first argument
-                        while self.peek() == &Token::Comma {
-                            self.advance(); // consume comma
-                            args.push(self.parse_expression(0)); // Parse next argument
-                        }
-                    }
-                    // Consume end of statement
-                    self.expect(Token::RightParen);
-                    self.expect(Token::Semicolon);
-                    Statement::Expr(Expression::FunctionCall(Box::new(FunctionCall {
-                        callee: name,
-                        args,
-                    })))
-                    .spanned(self.peek_span())
-                }
-            };
+        let Token::Identifier(name) = token.clone() else {
+            panic!(
+                "expected identifier as first token in statement, got {:?}",
+                token
+            );
+        };
+        match name.as_str() {
+            "var" => {
+                self.advance();
+                self.parse_variable_declaration()
+            }
+            "if" => {
+                self.advance();
+                Statement::If(self.parse_if()).spanned(self.peek_span())
+            }
+            // "return" => self.parse_return(),
+            "while" => {
+                self.advance();
+                self.parse_loop()
+            }
+            "func" => {
+                self.advance();
+                self.parse_function()
+            }
+            _ => match self.peek_next().clone() {
+                Token::LeftParen => self.parse_function_call(),
+                Token::Assign => self.parse_variable_assignemnt(),
+                _ => panic!(
+                    "Expected assignment or function call after identifier, got {:?}",
+                    self.peek()
+                ),
+            },
         }
-        panic!("Invalid token type for statement {:?}", token.clone());
     }
 
     // Expects a specific token and consumes it, panicking if the token doesn't match
     fn expect(&mut self, expected: Token) {
         let token = self.peek().clone();
         if token != expected {
-            panic!("Expected {:?}, got {:?}", expected, token);
+            panic!(
+                "Expected {:?}, got {:?} at {:?}",
+                expected,
+                token,
+                self.peek_span()
+            );
         }
         self.advance(); // consume the token
     }

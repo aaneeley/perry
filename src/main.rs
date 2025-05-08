@@ -8,9 +8,14 @@ use parser::Parser;
 use tokenizer::Lexer;
 
 fn main() {
-    let input = read_file("test.pry").unwrap();
-    println!("INPUT FILE:\n{}\n", input);
-    let mut lexer = Lexer::new(input);
+    let input = read_file("./working_examples/fizzbuzz.pry").unwrap();
+    // println!("INPUT FILE:\n{}\n", input);
+    // let input = r#"
+    // while (true) {
+    //     println("Hello");
+    // }
+    // "#;
+    let mut lexer = Lexer::new(input.to_string());
     let tokens = lexer.tokenize();
 
     let mut parser = Parser::new(tokens);

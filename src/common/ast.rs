@@ -45,11 +45,19 @@ pub enum Expression {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
-    // Function(FunctionDecl),
-    Variable(VariableDecl),
+    Function(FunctionDecl),
+    VarAssignment(VariableAssignment),
+    VarDecl(VariableDecl),
     If(IfStatement),
+    Loop(LoopStatement),
     // Return(ReturnStatement),
     Expr(Expression), // To allow void expressions in function body
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct VariableAssignment {
+    pub name: String,
+    pub value: SpannedExpression,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -108,6 +116,12 @@ pub struct IfStatement {
     pub condition: SpannedExpression,
     pub then_body: Vec<SpannedStatement>,
     pub else_body: Option<Box<IfStatement>>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct LoopStatement {
+    pub condition: SpannedExpression,
+    pub body: Vec<SpannedStatement>,
 }
 
 #[derive(Debug, PartialEq, Clone)]

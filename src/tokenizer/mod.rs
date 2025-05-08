@@ -44,7 +44,7 @@ impl Lexer {
         current_char
     }
 
-    // Skip over whitespace and newlines
+    // Skip over whitespace, newlines, and comments
     fn skip_empty(&mut self) {
         while let Some(ch) = self.peek_next() {
             if ch.is_whitespace() {

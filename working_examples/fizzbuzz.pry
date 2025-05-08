@@ -1,0 +1,22 @@
+/*
+FizzBuzz up to 15
+*/
+
+func fizzbuzz(limit: int): void {
+    var i: int = 1;
+    while (i <= limit) {
+        if (i % 15 == 0) {
+            println("FizzBuzz");
+        } else if (i % 3 == 0) {
+            println("Fizz");
+        } else if (i % 5 == 0) {
+            println("Buzz");
+        } else {
+            println(i); // implicitly converts to string
+        }
+        i = i + 1;
+    }
+}
+
+var result: int = fizzbuzz(15);
+println(result);

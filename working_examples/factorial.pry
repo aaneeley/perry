@@ -1,0 +1,14 @@
+/*
+Calculate factorial of 5
+*/
+
+func factorial(n: int): int {
+    if (n <= 1) {
+        return 1;
+    } else {
+        return n * factorial(n - 1);
+    }
+}
+
+var result: int = factorial(5);
+println(result);
