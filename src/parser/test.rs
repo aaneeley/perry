@@ -68,7 +68,10 @@ mod tests {
     }
 
     fn walk_if_chain(if_statement: &IfStatement) {
-        if let Some(ref else_if_statement) = if_statement.else_body {
+        if let Some(ref statement) = if_statement.else_body {
+            let Statement::If(else_if_statement) = statement.as_ref().as_ref() else {
+                panic!("Invalid else statement {:?}", statement.as_ref().as_ref());
+            };
             walk_if_chain(else_if_statement);
             return;
         } else {
@@ -184,13 +187,15 @@ mod tests {
                 type_: Type::Int,
                 body: vec![
                     Statement::Return(ReturnStatement {
-                        value: Expression::VariableRef(Box::new(VariableRef {
-                            name: "n".to_string(),
-                        }))
-                        .spanned(Span {
-                            line: 1,
-                            column: 33,
-                        }),
+                        value: Some(
+                            Expression::VariableRef(Box::new(VariableRef {
+                                name: "n".to_string(),
+                            }))
+                            .spanned(Span {
+                                line: 1,
+                                column: 33,
+                            }),
+                        ),
                     })
                     .spanned(Span {
                         line: 1,

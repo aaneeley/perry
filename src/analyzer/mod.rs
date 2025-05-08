@@ -1,7 +1,9 @@
-use std::{collections::HashMap, env::var, f32::consts::E, fmt::Display};
+pub mod test;
+
+use std::{collections::HashMap, fmt::Display};
 
 use crate::common::{
-    ast::{self, Expression, LiteralExpression, LiteralValue, Span, Type},
+    ast::{self, LiteralValue, Span, SpannedStatement, Type},
     token::BinaryOperator,
 };
 
@@ -89,10 +91,11 @@ impl<'a> Analyzer<'a> {
         }
     }
 
+    // Analyzes a single statement. Returns a bool indicating if the statement was a return
     fn analyze_statement(
         &mut self,
         statement: &ast::SpannedStatement,
-    ) -> Result<(), SemanticError> {
+    ) -> Result<bool, SemanticError> {
         match statement.node.clone() {
             ast::Statement::VarDecl(var_decl) => {
                 let identifier = var_decl.name.clone();
@@ -105,7 +108,7 @@ impl<'a> Analyzer<'a> {
                 }
                 self.symbol_table
                     .add_symbol(var_decl.name.clone(), type_.clone());
-                let expression_type = self.analyze_expression_type(&var_decl.value)?;
+                let expression_type = self.analyze_expression(&var_decl.value)?;
                 if &expression_type != &type_ {
                     return Err(SemanticError {
                         message: format!(
@@ -118,7 +121,7 @@ impl<'a> Analyzer<'a> {
             }
             ast::Statement::VarAssignment(var_assignment) => {
                 let identifier = var_assignment.name.clone();
-                let expression_type = self.analyze_expression_type(&var_assignment.value)?;
+                let expression_type = self.analyze_expression(&var_assignment.value)?;
 
                 // Verify variable is already declared
                 let Some(symbol) = self.symbol_table.lookup(&identifier) else {
@@ -139,21 +142,78 @@ impl<'a> Analyzer<'a> {
                     });
                 }
             }
-            //  TODO: function
+            ast::Statement::If(if_statement) => {
+                self.symbol_table.enter_scope();
+                let condition_type = self.analyze_expression(&if_statement.condition)?;
+                if condition_type != Type::Bool {
+                    return Err(SemanticError::new(
+                        format!(
+                            "if statement condition must resolve to bool, got {}",
+                            condition_type
+                        ),
+                        if_statement.condition.span,
+                    ));
+                }
+                self.analyze_body(&if_statement.then_body)?;
+                self.symbol_table.exit_scope();
+                if let Some(else_body) = if_statement.else_body {
+                    self.symbol_table.enter_scope();
+                    self.analyze_statement(&else_body)?;
+                    self.symbol_table.exit_scope();
+                }
+            }
+            ast::Statement::Function(function) => {
+                self.symbol_table.enter_scope();
+                for param in &function.params {
+                    self.symbol_table
+                        .add_symbol(param.name.clone(), param.type_.clone());
+                }
+                self.symbol_table
+                    .add_symbol("return".to_string(), function.type_.clone());
+                let returned = self.analyze_body(&function.body)?;
+                if function.type_ != Type::Void && !returned {
+                    return Err(SemanticError::new(
+                        format!("function {} must return a value", function.name),
+                        statement.span,
+                    ));
+                }
+                self.symbol_table.exit_scope();
+            }
+            ast::Statement::Return(return_statement) => {
+                let Some(expected_return) = &self.symbol_table.lookup("return") else {
+                    return Err(SemanticError::new(
+                        format!("return statement outside of function"),
+                        statement.span,
+                    ));
+                };
+                let return_value_type = match &return_statement.value {
+                    Some(return_value) => self.clone().analyze_expression(return_value)?,
+                    None => Type::Void,
+                };
+                if return_value_type != expected_return.type_ {
+                    return Err(SemanticError::new(
+                        format!(
+                            "return type mismatch: expected {}, got {}",
+                            expected_return.type_, return_value_type
+                        ),
+                        statement.span,
+                    ));
+                }
+                return Ok(true);
+            }
             //  TODO: loop
-            //  TODO: if
             _ => {
                 //  TODO: remove once all statement types are implemented
                 return Err(SemanticError {
-                    message: "invalid statement".to_string(),
+                    message: format!("invalid statement: {:?}", statement),
                     span: statement.span,
                 });
             }
         }
-        Ok(())
+        Ok(false)
     }
 
-    fn analyze_expression_type(
+    fn analyze_expression(
         &mut self,
         expression: &ast::SpannedExpression,
     ) -> Result<Type, SemanticError> {
@@ -186,8 +246,8 @@ impl<'a> Analyzer<'a> {
                 Ok(symbol.clone().type_)
             }
             ast::Expression::Binary(binary_expression) => {
-                let left_type = self.analyze_expression_type(&binary_expression.left)?;
-                let right_type = self.analyze_expression_type(&binary_expression.right)?;
+                let left_type = self.analyze_expression(&binary_expression.left)?;
+                let right_type = self.analyze_expression(&binary_expression.right)?;
                 if left_type != right_type {
                     return Err(SemanticError {
                         message: format!(
@@ -210,10 +270,19 @@ impl<'a> Analyzer<'a> {
         }
     }
 
-    pub fn analyze(&mut self) -> Result<(), SemanticError> {
-        for statement in &self.program_ast.body {
-            self.analyze_statement(statement)?;
+    // Analyzes a body of statements. Returns a bool indicating if any statement was a return
+    pub fn analyze_body(&mut self, body: &Vec<SpannedStatement>) -> Result<bool, SemanticError> {
+        let mut returned = false;
+        for statement in body {
+            if self.analyze_statement(statement)? {
+                returned = true;
+            }
         }
+        Ok(returned)
+    }
+
+    pub fn analyze(&mut self) -> Result<(), SemanticError> {
+        self.analyze_body(&self.program_ast.body)?;
         Ok(())
     }
 }

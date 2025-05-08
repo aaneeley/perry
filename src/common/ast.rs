@@ -93,7 +93,7 @@ pub enum Statement {
     If(IfStatement),
     Loop(LoopStatement),
     Return(ReturnStatement),
-    Expr(Expression), // To allow void expressions in function body
+    Expr(Expression), // Basically just for void function calls
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -157,7 +157,7 @@ pub enum LiteralValue {
 pub struct IfStatement {
     pub condition: SpannedExpression,
     pub then_body: Vec<SpannedStatement>,
-    pub else_body: Option<Box<IfStatement>>,
+    pub else_body: Option<Box<SpannedStatement>>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -168,5 +168,5 @@ pub struct LoopStatement {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ReturnStatement {
-    pub value: SpannedExpression,
+    pub value: Option<SpannedExpression>,
 }

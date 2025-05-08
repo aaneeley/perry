@@ -194,22 +194,27 @@ impl Parser {
         self.expect(Token::RightParen)?;
         self.expect(Token::LeftBrace)?;
         let then_body = self.parse_body()?;
-        let else_body: Option<Box<IfStatement>> =
+        let else_body: Option<Box<SpannedStatement>> =
             if self.peek() == &Token::Identifier("else".to_string()) {
                 self.advance();
                 if self.peek() == &Token::Identifier("if".to_string()) {
                     self.advance();
-                    Some(Box::new(self.parse_if()?))
+                    Some(Box::new(
+                        Statement::If(self.parse_if()?).spanned(self.peek_span()),
+                    ))
                 } else {
                     self.expect(Token::LeftBrace)?;
-                    Some(Box::new(IfStatement {
-                        condition: Expression::Literal(LiteralExpression {
-                            value: LiteralValue::Bool(true),
+                    Some(Box::new(
+                        Statement::If(IfStatement {
+                            condition: Expression::Literal(LiteralExpression {
+                                value: LiteralValue::Bool(true),
+                            })
+                            .spanned(self.peek_span()),
+                            then_body: self.parse_body()?,
+                            else_body: None,
                         })
                         .spanned(self.peek_span()),
-                        then_body: self.parse_body()?,
-                        else_body: None,
-                    }))
+                    ))
                 }
             } else {
                 None
@@ -301,9 +306,13 @@ impl Parser {
     }
 
     fn parse_return(&mut self) -> Result<SpannedStatement, SyntaxError> {
+        if self.peek() == &Token::Semicolon {
+            self.advance();
+            return Ok(Statement::Return(ReturnStatement { value: None }).spanned(self.peek_span()));
+        }
         let value = self.parse_expression(0)?;
         self.expect(Token::Semicolon)?;
-        Ok(Statement::Return(ReturnStatement { value }).spanned(self.peek_span()))
+        Ok(Statement::Return(ReturnStatement { value: Some(value) }).spanned(self.peek_span()))
     }
 
     // Parses a parameter

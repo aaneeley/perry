@@ -1,11 +1,12 @@
+mod analyzer;
 mod common;
-mod interpreter;
 mod parser;
 mod tokenizer;
 use std::env;
 use std::fs::File;
 use std::io::{self, Read};
 
+use analyzer::Analyzer;
 use parser::Parser;
 use tokenizer::Lexer;
 
@@ -21,11 +22,11 @@ fn main() -> io::Result<()> {
     let tokens = lexer.tokenize().unwrap();
 
     let mut parser = Parser::new(tokens);
-    let ast = parser.parse();
+    let ast = parser.parse().unwrap();
 
-    for statement in ast.unwrap().body {
-        println!("{:#?}", statement);
-    }
+    let mut analyzer = Analyzer::new(&ast);
+    let result = analyzer.analyze();
+    println!("{:#?}", result);
 
     Ok(())
 }
