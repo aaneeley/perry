@@ -25,8 +25,13 @@ impl Lexer {
         self.input[self.position..].chars().next()
     }
 
+    // Peek the next nth char without consuming
+    fn peek_next_n(&self, n: usize) -> Option<char> {
+        self.input[self.position..].chars().nth(n)
+    }
+
     // Peek and consume
-    fn next_char(&mut self) -> Option<char> {
+    fn advance(&mut self) -> Option<char> {
         let current_char = self.peek_next();
         // Update position
         if current_char == Some('\n') {
@@ -40,11 +45,21 @@ impl Lexer {
     }
 
     // Skip over whitespace and newlines
-    // TODO: Skip comments
     fn skip_empty(&mut self) {
         while let Some(ch) = self.peek_next() {
             if ch.is_whitespace() {
-                self.next_char(); // Skip
+                self.advance(); // Skip
+            } else if ch == '/' {
+                if self.peek_next_n(1) == Some('/') {
+                    while let Some(ch) = self.peek_next() {
+                        self.advance();
+                        if ch == '\n' {
+                            break;
+                        }
+                    }
+                } else {
+                    break;
+                }
             } else {
                 break;
             }
@@ -57,7 +72,10 @@ impl Lexer {
         let pn = self.peek_next();
 
         if pn.is_none() {
-            return Token::EOF.spanned(self.span);
+            return Token::EOF.spanned(Span {
+                line: self.span.line,
+                column: self.span.column + 1,
+            });
         }
 
         let peeked = pn.unwrap();
@@ -66,91 +84,91 @@ impl Lexer {
             '0'..='9' => self.consume_numeric_literal(),
             '"' => self.consume_string_literal(),
             '=' => {
-                self.next_char();
+                self.advance();
                 if self.peek_next() == Some('=') {
-                    self.next_char();
+                    self.advance();
                     Token::BinaryOperator(BinaryOperator::Equal)
                 } else {
                     Token::Assign
                 }
             }
             '!' => {
-                self.next_char();
+                self.advance();
                 if self.peek_next() == Some('=') {
-                    self.next_char();
+                    self.advance();
                     Token::BinaryOperator(BinaryOperator::NotEqual)
                 } else {
                     Token::UnaryOperator(UnaryOperator::Not)
                 }
             }
             '<' => {
-                self.next_char();
+                self.advance();
                 if self.peek_next() == Some('=') {
-                    self.next_char();
+                    self.advance();
                     Token::BinaryOperator(BinaryOperator::LessThanOrEqual)
                 } else {
                     Token::BinaryOperator(BinaryOperator::LessThan)
                 }
             }
             '>' => {
-                self.next_char();
+                self.advance();
                 if self.peek_next() == Some('=') {
-                    self.next_char();
+                    self.advance();
                     Token::BinaryOperator(BinaryOperator::GreaterThanOrEqual)
                 } else {
                     Token::BinaryOperator(BinaryOperator::GreaterThan)
                 }
             }
             '+' => {
-                self.next_char();
+                self.advance();
                 Token::BinaryOperator(BinaryOperator::Add)
             }
             '-' => {
-                self.next_char();
+                self.advance();
                 Token::BinaryOperator(BinaryOperator::Subtract)
             }
             '*' => {
-                self.next_char();
+                self.advance();
                 Token::BinaryOperator(BinaryOperator::Multiply)
             }
             '/' => {
-                self.next_char();
+                self.advance();
                 Token::BinaryOperator(BinaryOperator::Divide)
             }
             '%' => {
-                self.next_char();
+                self.advance();
                 Token::BinaryOperator(BinaryOperator::Modulo)
             }
             ';' => {
-                self.next_char();
+                self.advance();
                 Token::Semicolon
             }
             ':' => {
-                self.next_char();
+                self.advance();
                 Token::Colon
             }
             ',' => {
-                self.next_char();
+                self.advance();
                 Token::Comma
             }
             '(' => {
-                self.next_char();
+                self.advance();
                 Token::LeftParen
             }
             ')' => {
-                self.next_char();
+                self.advance();
                 Token::RightParen
             }
             '{' => {
-                self.next_char();
+                self.advance();
                 Token::LeftBrace
             }
             '}' => {
-                self.next_char();
+                self.advance();
                 Token::RightBrace
             }
             _ => {
-                self.next_char();
+                self.advance();
                 Token::Invalid(peeked.to_string())
             }
         };
@@ -164,7 +182,7 @@ impl Lexer {
             match next {
                 '0'..='9' => {
                     literal.push(next);
-                    self.next_char();
+                    self.advance();
                 }
                 _ => break,
             }
@@ -175,8 +193,8 @@ impl Lexer {
 
     fn consume_string_literal(&mut self) -> Token {
         let mut literal = String::new();
-        self.next_char(); // Skip starting quote
-        while let Some(next) = self.next_char() {
+        self.advance(); // Skip starting quote
+        while let Some(next) = self.advance() {
             if next == '"' {
                 break;
             }
@@ -192,7 +210,7 @@ impl Lexer {
             match next {
                 'a'..='z' | 'A'..='Z' | '_' => {
                     identifier.push(next);
-                    self.next_char();
+                    self.advance();
                 }
                 _ => break,
             }

@@ -11,7 +11,7 @@ mod tests {
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize();
         let expected_tokens = vec![
-            Token::Identifier("print".to_string()).spanned(Span { line: 1, column: 1 }),
+            Token::Identifier("print".to_string()).spanned(Span { line: 1, column: 5 }),
             Token::LeftParen.spanned(Span { line: 1, column: 6 }),
             Token::StringLiteral("Hello".to_string()).spanned(Span {
                 line: 1,
@@ -36,6 +36,43 @@ mod tests {
             Token::EOF.spanned(Span {
                 line: 1,
                 column: 26,
+            }),
+        ];
+        assert_eq!(tokens, expected_tokens);
+    }
+
+    #[test]
+    fn test_comment_skipping() {
+        let input = r#"print("Hello", "World!"); // comment 123 ([]}};; +- comment
+        // comment 123 ([]}};; +- comment"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let tokens = lexer.tokenize();
+        let expected_tokens = vec![
+            Token::Identifier("print".to_string()).spanned(Span { line: 1, column: 5 }),
+            Token::LeftParen.spanned(Span { line: 1, column: 6 }),
+            Token::StringLiteral("Hello".to_string()).spanned(Span {
+                line: 1,
+                column: 13,
+            }),
+            Token::Comma.spanned(Span {
+                line: 1,
+                column: 14,
+            }),
+            Token::StringLiteral("World!".to_string()).spanned(Span {
+                line: 1,
+                column: 23,
+            }),
+            Token::RightParen.spanned(Span {
+                line: 1,
+                column: 24,
+            }),
+            Token::Semicolon.spanned(Span {
+                line: 1,
+                column: 25,
+            }),
+            Token::EOF.spanned(Span {
+                line: 2,
+                column: 42,
             }),
         ];
         assert_eq!(tokens, expected_tokens);

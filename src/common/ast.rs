@@ -35,7 +35,7 @@ pub type SpannedExpression = WithSpan<Expression>;
 impl Spannable for Statement {}
 impl Spannable for Expression {}
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Binary(Box<BinaryExpression>),
     Literal(LiteralExpression),
@@ -43,7 +43,7 @@ pub enum Expression {
     VariableRef(Box<VariableRef>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     // Function(FunctionDecl),
     Variable(VariableDecl),
@@ -52,14 +52,14 @@ pub enum Statement {
     Expr(Expression), // To allow void expressions in function body
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct VariableDecl {
     pub name: String,
     pub value: SpannedExpression,
     pub type_name: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct FunctionDecl {
     pub name: String,
     pub params: Vec<Parameter>,
@@ -67,50 +67,50 @@ pub struct FunctionDecl {
     pub body: Vec<SpannedStatement>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Parameter {
     pub name: String,
     pub type_name: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct FunctionCall {
     pub callee: String,
     pub args: Vec<SpannedExpression>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct VariableRef {
     pub name: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct BinaryExpression {
     pub left: SpannedExpression,
     pub right: SpannedExpression,
     pub operator: token::BinaryOperator,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct LiteralExpression {
     pub value: LiteralValue,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LiteralValue {
     String(String),
     Number(i32),
     Bool(bool),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct IfStatement {
     pub condition: SpannedExpression,
     pub then_body: Vec<SpannedStatement>,
     pub else_body: Option<Box<IfStatement>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ReturnStatement {
     pub value: SpannedExpression,
 }
