@@ -280,7 +280,6 @@ impl<'a> Interpreter<'a> {
                 ast::Statement::Loop(loop_statement) => self.execute_loop(&loop_statement)?,
                 ast::Statement::Expr(expr) => {
                     // NOTE: Might want to filter by function calls here.
-                    // TEST: shoult this return?
                     self.evaluate_expression(&expr.spanned(statement.span))?;
                     None
                 }

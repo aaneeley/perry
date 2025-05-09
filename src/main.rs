@@ -21,16 +21,34 @@ fn main() -> io::Result<()> {
 
     let input = read_file(&args[1])?;
     let mut tokenizer = Tokenizer::new(input.to_string());
-    let tokens = tokenizer.tokenize().unwrap();
+    let tokens = match tokenizer.tokenize() {
+        Ok(tokens) => tokens,
+        Err(err) => {
+            eprintln!("{}", err);
+            std::process::exit(1);
+        }
+    };
 
     let mut parser = Parser::new(tokens);
-    let ast = parser.parse().unwrap();
+    let ast = match parser.parse() {
+        Ok(ast) => ast,
+        Err(err) => {
+            eprintln!("{}", err);
+            std::process::exit(1);
+        }
+    };
 
     let mut analyzer = Analyzer::new(&ast);
-    analyzer.analyze().unwrap();
+    if let Err(err) = analyzer.analyze() {
+        eprintln!("{}", err);
+        std::process::exit(1);
+    }
 
     let mut interpreter = Interpreter::new(&ast);
-    interpreter.execute().unwrap();
+    if let Err(err) = interpreter.execute() {
+        eprintln!("{}", err);
+        std::process::exit(1);
+    }
 
     Ok(())
 }
