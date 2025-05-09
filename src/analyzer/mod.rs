@@ -85,6 +85,14 @@ impl<'a> Analyzer<'a> {
                 type_: Type::String,
             }],
         );
+        self.symbol_table.add_function_signature(
+            "to_str".to_string(),
+            Type::String,
+            vec![Parameter {
+                name: "arg".to_string(),
+                type_: Type::Int,
+            }],
+        );
         self.analyze_body(&self.program_ast.body)?;
         Ok(())
     }
@@ -163,13 +171,14 @@ impl<'a> Analyzer<'a> {
                         if_statement.condition.span,
                     ));
                 }
-                self.analyze_body(&if_statement.then_body)?;
+                let mut returned = self.analyze_body(&if_statement.then_body)?;
                 self.symbol_table.exit_scope();
                 if let Some(else_body) = if_statement.else_body {
                     self.symbol_table.enter_scope();
-                    self.analyze_statement(&else_body)?;
+                    returned = self.analyze_statement(&else_body)?;
                     self.symbol_table.exit_scope();
                 }
+                return Ok(returned);
             }
             ast::Statement::Function(function) => {
                 self.symbol_table.add_function_signature(
@@ -192,6 +201,7 @@ impl<'a> Analyzer<'a> {
                     ));
                 }
                 self.symbol_table.exit_scope();
+                return Ok(returned);
             }
             ast::Statement::Return(return_statement) => {
                 let Some(expected_return) = &self.symbol_table.lookup("return") else {
@@ -227,8 +237,9 @@ impl<'a> Analyzer<'a> {
                         loop_statement.condition.span,
                     ));
                 }
-                self.analyze_body(&loop_statement.body)?;
+                let returned = self.analyze_body(&loop_statement.body)?;
                 self.symbol_table.exit_scope();
+                return Ok(returned);
             }
             ast::Statement::Expr(expr) => {
                 self.analyze_expression(&expr.spanned(statement.span))?;

@@ -188,6 +188,27 @@ mod tests {
     }
 
     #[test]
+    fn valid_nexted_return() {
+        let input = r#"func name(n: int): int {
+            if(true) {
+            } else if(false) {
+            } else {
+                while(true) {
+                    if (true) {
+                        return n;
+                    }
+                }
+            }
+        }"#;
+        let mut tokenizer = Tokenizer::new(input.to_string());
+        let tokens = tokenizer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse().unwrap();
+        let mut analyzer = Analyzer::new(&ast);
+        analyzer.analyze().unwrap();
+    }
+
+    #[test]
     fn mismatched_type_function_call() {
         let input = r#"func name(n: int): int {
             return n;

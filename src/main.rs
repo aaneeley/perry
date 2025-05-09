@@ -21,12 +21,11 @@ fn main() -> io::Result<()> {
     let mut tokenizer = Tokenizer::new(input.to_string());
     let tokens = tokenizer.tokenize().unwrap();
 
-    println!("{:#?}", tokens);
-    // let mut parser = Parser::new(tokens);
-    // let ast = parser.parse().unwrap();
-    //
-    // let mut analyzer = Analyzer::new(&ast);
-    // analyzer.analyze().unwrap();
+    let mut parser = Parser::new(tokens);
+    let ast = parser.parse().unwrap();
+
+    let mut analyzer = Analyzer::new(&ast);
+    analyzer.analyze().unwrap();
 
     Ok(())
 }

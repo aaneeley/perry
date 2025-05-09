@@ -11,4 +11,4 @@ func factorial(n: int): int {
 }
 
 var result: int = factorial(5);
-println(result);
+println(to_str(result));
