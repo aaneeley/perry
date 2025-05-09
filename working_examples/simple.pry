@@ -1,9 +1,14 @@
-func testLoop(): void {
-    var test: int = 1;
-    while ( test < 100 ) {
-        println(test);
-        test = test + 1;
+func test(): string {
+    println("executing...");
+    var i: int = 0;
+    while (i < 10) {
+        i = i + 1;
+        println(i);
+        if (i == 5) {
+            return "bonk";
+        }
     }
+    println("over executed. This is  bad!");
 }
 
-testLoop();
+println(test());

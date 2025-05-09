@@ -36,7 +36,6 @@ impl ScopeStack {
     fn lookup(&self, name: &str) -> Option<&SpannedStatement> {
         self.tables
             .iter()
-            .rev()
             .flat_map(|table| table.iter())
             .find(|statement| match statement.as_ref() {
                 Statement::VarDecl(var_decl) => var_decl.name == name,
@@ -100,26 +99,26 @@ impl<'a> Interpreter<'a> {
             ast::Expression::FunctionCall(function_call) => {
                 let maybe_user_func = self.scope_stack.lookup(&function_call.callee).cloned();
                 let mut evaluated_args: Vec<LiteralValue> = Vec::new();
-                for arg in function_call.args {
-                    let evaluated_value = self.evaluate_expression(&arg)?;
+
+                for arg in function_call.args.iter() {
+                    let evaluated_value = self.evaluate_expression(arg)?;
                     evaluated_args.push(evaluated_value);
                 }
-                self.scope_stack.enter_scope();
+
                 if let Some(user_func) = maybe_user_func {
-                    self.execute_function(&user_func, &evaluated_args)?;
+                    self.scope_stack.enter_scope();
+                    let result = self.execute_function(&user_func, &evaluated_args)?;
+                    self.scope_stack.exit_scope();
+                    Ok(result)
+                } else if let Some(built_in_fn) = self.built_ins.get(&function_call.callee) {
+                    built_in_fn(evaluated_args)?;
+                    Ok(LiteralValue::Void)
                 } else {
-                    if let Some(built_in_fn) = self.built_ins.get(&function_call.callee) {
-                        built_in_fn(evaluated_args)?;
-                    } else {
-                        return Err(RuntimeError::new(
-                            format!("use of undefined function {}", function_call.callee),
-                            expression.span,
-                        ));
-                    }
+                    Err(RuntimeError::new(
+                        format!("use of undefined function {}", function_call.callee),
+                        expression.span,
+                    ))
                 }
-                self.scope_stack.exit_scope();
-                // TODO: returns
-                Ok(LiteralValue::Void)
             }
             ast::Expression::VariableRef(variable_ref) => {
                 let Some(symbol) = self.scope_stack.lookup(&variable_ref.name) else {
@@ -225,43 +224,66 @@ impl<'a> Interpreter<'a> {
                 .spanned(function.span),
             );
         }
-        self.execute_statements(&func.body)?;
-        // TODO: returns
-        Ok(LiteralValue::Void)
+        self.execute_statements(&func.body)
+            .map(|opt| opt.unwrap_or(LiteralValue::Void))
     }
 
-    fn execute_loop(&mut self, loop_statement: &ast::LoopStatement) -> Result<(), RuntimeError> {
+    fn execute_loop(
+        &mut self,
+        loop_statement: &ast::LoopStatement,
+    ) -> Result<Option<LiteralValue>, RuntimeError> {
         self.scope_stack.enter_scope();
         let condition_value = self.evaluate_expression(&loop_statement.condition)?;
         if condition_value == LiteralValue::Bool(false) {
             self.scope_stack.exit_scope();
-            return Ok(());
+            return Ok(None);
         }
-        self.execute_statements(&loop_statement.body)?;
-        self.execute_loop(loop_statement)?;
-        Ok(())
+        if let Some(returned) = self.execute_statements(&loop_statement.body)? {
+            return Ok(Some(returned));
+        }
+        Ok(self.execute_loop(loop_statement)?)
     }
 
-    fn execute_statements(&mut self, body: &Vec<SpannedStatement>) -> Result<(), RuntimeError> {
+    fn execute_if(
+        &mut self,
+        if_statement: &ast::IfStatement,
+    ) -> Result<Option<LiteralValue>, RuntimeError> {
+        self.scope_stack.enter_scope();
+        let condition_value = self.evaluate_expression(&if_statement.condition)?;
+        let return_value = if condition_value == LiteralValue::Bool(true) {
+            self.execute_statements(&if_statement.then_body)?
+        } else if let Some(else_body) = &if_statement.else_body {
+            self.execute_statements(&vec![*else_body.clone()])?
+        } else {
+            None
+        };
+        self.scope_stack.exit_scope();
+        Ok(return_value)
+    }
+
+    // Executes a vec of statement and returns the value if any of the statements is a return
+    fn execute_statements(
+        &mut self,
+        body: &Vec<SpannedStatement>,
+    ) -> Result<Option<LiteralValue>, RuntimeError> {
         for statement in body.iter() {
-            match statement.node.clone() {
+            let statement_return: Option<LiteralValue> = match statement.node.clone() {
                 ast::Statement::Function(_) | ast::Statement::VarDecl(_) => {
-                    self.scope_stack.add_statement(statement.clone())
+                    self.scope_stack.add_statement(statement.clone());
+                    None
                 }
-                ast::Statement::If(if_statement) => {
-                    self.scope_stack.enter_scope();
-                    let condition_value = self.evaluate_expression(&if_statement.condition)?;
-                    if condition_value == LiteralValue::Bool(true) {
-                        self.execute_statements(&if_statement.then_body)?;
-                    } else if let Some(else_body) = &if_statement.else_body {
-                        self.execute_statements(&vec![*else_body.clone()])?;
-                    }
-                    self.scope_stack.exit_scope();
-                }
+                ast::Statement::Return(return_statement) => return_statement
+                    .value
+                    .as_ref()
+                    .map(|v| self.evaluate_expression(v))
+                    .transpose()?,
+                ast::Statement::If(if_statement) => self.execute_if(&if_statement)?,
                 ast::Statement::Loop(loop_statement) => self.execute_loop(&loop_statement)?,
                 ast::Statement::Expr(expr) => {
                     // NOTE: Might want to filter by function calls here.
+                    // TEST: shoult this return?
                     self.evaluate_expression(&expr.spanned(statement.span))?;
+                    None
                 }
                 ast::Statement::VarAssignment(var_assignment) => {
                     let identifier = var_assignment.name.clone();
@@ -287,11 +309,16 @@ impl<'a> Interpreter<'a> {
                             statement.node.clone()
                         )
                     }
+                    None
                 }
-                _ => panic!("invalid statement in execution body"),
+            };
+
+            // If the currently looped statement returned a value, return from the loop
+            if let Some(return_value) = statement_return {
+                return Ok(Some(return_value));
             }
         }
-        Ok(())
+        Ok(None)
     }
 
     pub fn execute(&mut self) -> Result<(), RuntimeError> {
