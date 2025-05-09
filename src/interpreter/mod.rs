@@ -46,9 +46,12 @@ impl ScopeStack {
     }
 }
 
+type BuiltInFn = fn(Vec<LiteralValue>) -> Result<LiteralValue, RuntimeError>;
+
 #[derive(Clone)]
 pub struct Interpreter<'a> {
     scope_stack: ScopeStack,
+    built_ins: HashMap<String, BuiltInFn>,
     program_ast: &'a ast::Program,
 }
 
@@ -56,47 +59,24 @@ impl<'a> Interpreter<'a> {
     pub fn new(program_ast: &'a ast::Program) -> Self {
         Self {
             scope_stack: ScopeStack::new(),
+            built_ins: HashMap::new(),
             program_ast,
         }
     }
 
-    fn scope_builtins(&mut self) {
-        self.scope_stack.add_statement(
-            ast::Statement::Function(ast::FunctionDecl {
-                name: "print".to_string(),
-                params: vec![ast::Parameter {
-                    name: "arg".to_string(),
-                    type_: Type::String,
-                }],
-                type_: Type::Void,
-                body: vec![],
-            })
-            .spanned(Span { line: 1, column: 1 }),
-        );
-        self.scope_stack.add_statement(
-            ast::Statement::Function(ast::FunctionDecl {
-                name: "println".to_string(),
-                params: vec![ast::Parameter {
-                    name: "arg".to_string(),
-                    type_: Type::String,
-                }],
-                type_: Type::Void,
-                body: vec![],
-            })
-            .spanned(Span { line: 1, column: 1 }),
-        );
-        self.scope_stack.add_statement(
-            ast::Statement::Function(ast::FunctionDecl {
-                name: "to_str".to_string(),
-                params: vec![ast::Parameter {
-                    name: "arg".to_string(),
-                    type_: Type::Int,
-                }],
-                type_: Type::String,
-                body: vec![],
-            })
-            .spanned(Span { line: 1, column: 1 }),
-        );
+    fn initialize_built_ins(&mut self) {
+        self.built_ins
+            .insert("print".to_string(), |args: Vec<LiteralValue>| {
+                let arg_value = args[0].clone();
+                print!("{}", arg_value);
+                Ok(LiteralValue::Void)
+            });
+        self.built_ins
+            .insert("println".to_string(), |args: Vec<LiteralValue>| {
+                let arg_value = args[0].clone();
+                println!("{}", arg_value);
+                Ok(LiteralValue::Void)
+            });
     }
 
     fn evaluate_expression(
@@ -106,17 +86,28 @@ impl<'a> Interpreter<'a> {
         match expression.node.clone() {
             ast::Expression::Literal(literal) => Ok(literal.value),
             ast::Expression::FunctionCall(function_call) => {
-                let function = {
-                    let name = &function_call.callee;
-                    self.scope_stack.lookup(name).cloned().ok_or_else(|| {
-                        RuntimeError::new(
-                            format!("use of undefined function {}", name),
+                let maybe_user_func = self.scope_stack.lookup(&function_call.callee).cloned();
+                let mut evaluated_args: Vec<LiteralValue> = Vec::new();
+                for arg in function_call.args {
+                    let evaluated_value = self.evaluate_expression(&arg)?;
+                    evaluated_args.push(evaluated_value);
+                }
+                self.scope_stack.enter_scope();
+                if let Some(user_func) = maybe_user_func {
+                    self.execute_function(&user_func, &evaluated_args)?;
+                } else {
+                    if let Some(built_in_fn) = self.built_ins.get(&function_call.callee) {
+                        built_in_fn(evaluated_args)?;
+                    } else {
+                        return Err(RuntimeError::new(
+                            format!("use of undefined function {}", function_call.callee),
                             expression.span,
-                        )
-                    })?
-                };
-
-                return self.execute_function(&function, &function_call.args);
+                        ));
+                    }
+                }
+                self.scope_stack.exit_scope();
+                // TODO: returns
+                Ok(LiteralValue::Void)
             }
             ast::Expression::Binary(binary_expression) => {
                 let left_value = self.evaluate_expression(&binary_expression.left)?;
@@ -189,52 +180,30 @@ impl<'a> Interpreter<'a> {
     fn execute_function(
         &mut self,
         function: &ast::SpannedStatement,
-        args: &Vec<SpannedExpression>,
+        arg_vals: &Vec<LiteralValue>,
     ) -> Result<LiteralValue, RuntimeError> {
-        for (index, arg) in args.iter().enumerate() {
-            let arg_name = format!("arg{}", index);
-            let arg_value = self.evaluate_expression(arg)?;
-            self.scope_stack.add_statement(
-                ast::Statement::VarAssignment(ast::VariableAssignment {
-                    name: arg_name,
-                    value: Expression::Literal(LiteralExpression {
-                        value: arg_value.clone(),
-                    })
-                    .spanned(arg.span),
-                })
-                .spanned(arg.span),
-            );
-        }
         let Statement::Function(func) = function.node.clone() else {
             return Err(RuntimeError::new(
                 format!("expected function, got {:?}", function.node),
                 function.span,
             ));
         };
-        match func.name.as_str() {
-            "print" => {
-                let arg_value = self.evaluate_expression(&args[0])?;
-                print!("{}", arg_value);
-            }
-            "println" => {
-                let arg_value = self.evaluate_expression(&args[0])?;
-                println!("{}", arg_value);
-            }
-            "to_str" => {
-                let arg_value = self.evaluate_expression(&args[0])?;
-                let LiteralValue::Number(value) = arg_value else {
-                    return Err(RuntimeError::new(
-                        format!("not a number: {}", arg_value),
-                        args[0].span,
-                    ));
-                };
-                return Ok(LiteralValue::String(value.to_string()));
-            }
-            _ => {
-                self.execute_body(&func.body)?;
-            }
+        // Label arguments with their names in the function signature
+        for (i, value) in arg_vals.iter().enumerate() {
+            self.scope_stack.add_statement(
+                ast::Statement::VarAssignment(ast::VariableAssignment {
+                    name: func.params[i].name.clone(),
+                    value: Expression::Literal(LiteralExpression {
+                        value: value.clone(),
+                    })
+                    .spanned(function.span),
+                })
+                .spanned(function.span),
+            );
         }
-        Ok(LiteralValue::Number(0))
+        self.execute_body(&func.body)?;
+        // TODO: returns
+        Ok(LiteralValue::Void)
     }
 
     fn execute_loop(&mut self, loop_statement: &ast::LoopStatement) -> Result<(), RuntimeError> {
@@ -266,24 +235,11 @@ impl<'a> Interpreter<'a> {
                     self.scope_stack.exit_scope();
                 }
                 ast::Statement::Loop(loop_statement) => self.execute_loop(&loop_statement)?,
-                ast::Statement::Expr(expr) => match expr.clone() {
-                    ast::Expression::FunctionCall(function_call) => {
-                        self.scope_stack.enter_scope();
-                        let function = {
-                            let name = &function_call.callee;
-                            self.scope_stack.lookup(name).cloned().ok_or_else(|| {
-                                RuntimeError::new(
-                                    format!("use of undefined function {}", name),
-                                    statement.span,
-                                )
-                            })?
-                        };
-                        self.execute_function(&function, &function_call.args)?;
-                        self.scope_stack.exit_scope();
-                    }
-                    _ => {}
-                },
-                _ => {}
+                ast::Statement::Expr(expr) => {
+                    // NOTE: Might want to filter by function calls here.
+                    self.evaluate_expression(&expr.spanned(statement.span))?;
+                }
+                _ => panic!("invalid statement in execution body"),
             }
         }
         Ok(())
@@ -291,7 +247,7 @@ impl<'a> Interpreter<'a> {
 
     pub fn execute(&mut self) -> Result<(), RuntimeError> {
         self.scope_stack.enter_scope();
-        self.scope_builtins();
+        self.initialize_built_ins();
         self.execute_body(&self.program_ast.body)?;
         Ok(())
     }

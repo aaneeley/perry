@@ -49,7 +49,8 @@ pub enum Type {
     Bool,
     Int,
     String,
-    // Array(Box<Type>),
+    Any, // Reserved for builtin functions
+         // Array(Box<Type>),
 }
 
 impl FromStr for Type {
@@ -73,6 +74,7 @@ impl Display for Type {
             Type::Bool => write!(f, "bool"),
             Type::Int => write!(f, "int"),
             Type::String => write!(f, "string"),
+            Type::Any => write!(f, "any"),
         }
     }
 }
@@ -83,6 +85,7 @@ impl From<LiteralValue> for Type {
             LiteralValue::String(_) => Type::String,
             LiteralValue::Number(_) => Type::Int,
             LiteralValue::Bool(_) => Type::Bool,
+            LiteralValue::Void => Type::Void,
         }
     }
 }
@@ -161,6 +164,7 @@ pub enum LiteralValue {
     String(String),
     Number(i32),
     Bool(bool),
+    Void,
 }
 
 impl Display for LiteralValue {
@@ -169,6 +173,7 @@ impl Display for LiteralValue {
             LiteralValue::String(value) => write!(f, "{}", value),
             LiteralValue::Number(value) => write!(f, "{}", value),
             LiteralValue::Bool(value) => write!(f, "{}", value),
+            LiteralValue::Void => write!(f, "void"),
         }
     }
 }

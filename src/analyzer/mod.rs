@@ -21,9 +21,7 @@ struct Symbol {
 
 impl SymbolTable {
     fn new() -> SymbolTable {
-        SymbolTable {
-            tables: vec![HashMap::new()],
-        }
+        SymbolTable { tables: Vec::new() }
     }
 
     fn add_symbol(&mut self, name: String, type_: Type) {
@@ -69,12 +67,20 @@ impl<'a> Analyzer<'a> {
 
     // Calls analyze_body on the top-level program AST
     pub fn analyze(&mut self) -> Result<(), SemanticError> {
+        self.symbol_table.enter_scope();
+        self.initialize_built_ins();
+        self.analyze_body(&self.program_ast.body)?;
+        self.symbol_table.exit_scope();
+        Ok(())
+    }
+
+    pub fn initialize_built_ins(&mut self) {
         self.symbol_table.add_function_signature(
             "print".to_string(),
             Type::Void,
             vec![Parameter {
                 name: "arg".to_string(),
-                type_: Type::String,
+                type_: Type::Any,
             }],
         );
         self.symbol_table.add_function_signature(
@@ -82,19 +88,9 @@ impl<'a> Analyzer<'a> {
             Type::Void,
             vec![Parameter {
                 name: "arg".to_string(),
-                type_: Type::String,
+                type_: Type::Any,
             }],
         );
-        self.symbol_table.add_function_signature(
-            "to_str".to_string(),
-            Type::String,
-            vec![Parameter {
-                name: "arg".to_string(),
-                type_: Type::Int,
-            }],
-        );
-        self.analyze_body(&self.program_ast.body)?;
-        Ok(())
     }
 
     // Analyzes a body of statements. Returns a bool indicating if any statement was a return
@@ -258,6 +254,7 @@ impl<'a> Analyzer<'a> {
                     LiteralValue::String(_) => Ok(Type::String),
                     LiteralValue::Number(_) => Ok(Type::Int),
                     LiteralValue::Bool(_) => Ok(Type::Bool),
+                    LiteralValue::Void => Ok(Type::Void),
                 };
             }
             ast::Expression::VariableRef(variable_ref) => {
@@ -300,7 +297,7 @@ impl<'a> Analyzer<'a> {
                 // Check for type of arguments
                 for (index, param) in expected_params.iter().enumerate() {
                     let arg_type = self.analyze_expression(&function_call.args[index])?;
-                    if arg_type != param.type_ {
+                    if arg_type != param.type_ && param.type_ != Type::Any {
                         return Err(SemanticError {
                             message: format!(
                                 "type mismatch: expected {}, got {}",
