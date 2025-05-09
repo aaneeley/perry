@@ -8,33 +8,15 @@ use crate::common::{
     token::BinaryOperator,
 };
 
-#[derive(Debug, PartialEq)]
-pub struct SemanticError {
-    pub message: String,
-    pub span: Span,
-}
-
-impl SemanticError {
-    pub fn new(message: String, span: Span) -> Self {
-        Self { message, span }
-    }
-}
-
-impl Display for SemanticError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "SemanticError: {} (at {})", self.message, self.span)
-    }
+#[derive(Clone)]
+struct SymbolTable {
+    tables: Vec<HashMap<String, Symbol>>,
 }
 
 #[derive(Clone)]
 struct Symbol {
     type_: Type,
     params: Vec<Parameter>,
-}
-
-#[derive(Clone)]
-struct SymbolTable {
-    tables: Vec<HashMap<String, Symbol>>,
 }
 
 impl SymbolTable {
@@ -83,6 +65,27 @@ impl<'a> Analyzer<'a> {
             symbol_table: SymbolTable::new(),
             program_ast,
         }
+    }
+
+    // Calls analyze_body on the top-level program AST
+    pub fn analyze(&mut self) -> Result<(), SemanticError> {
+        self.symbol_table
+            .add_symbol("print".to_string(), Type::Void);
+        self.symbol_table
+            .add_symbol("print".to_string(), Type::Void);
+        self.analyze_body(&self.program_ast.body)?;
+        Ok(())
+    }
+
+    // Analyzes a body of statements. Returns a bool indicating if any statement was a return
+    pub fn analyze_body(&mut self, body: &Vec<SpannedStatement>) -> Result<bool, SemanticError> {
+        let mut returned = false;
+        for statement in body {
+            if self.analyze_statement(statement)? {
+                returned = true;
+            }
+        }
+        Ok(returned)
     }
 
     // Analyzes a single statement. Returns a bool indicating if the statement was a return
@@ -310,20 +313,22 @@ impl<'a> Analyzer<'a> {
             }
         }
     }
+}
 
-    // Analyzes a body of statements. Returns a bool indicating if any statement was a return
-    pub fn analyze_body(&mut self, body: &Vec<SpannedStatement>) -> Result<bool, SemanticError> {
-        let mut returned = false;
-        for statement in body {
-            if self.analyze_statement(statement)? {
-                returned = true;
-            }
-        }
-        Ok(returned)
+#[derive(Debug, PartialEq)]
+pub struct SemanticError {
+    pub message: String,
+    pub span: Span,
+}
+
+impl SemanticError {
+    pub fn new(message: String, span: Span) -> Self {
+        Self { message, span }
     }
+}
 
-    pub fn analyze(&mut self) -> Result<(), SemanticError> {
-        self.analyze_body(&self.program_ast.body)?;
-        Ok(())
+impl Display for SemanticError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SemanticError: {} (at {})", self.message, self.span)
     }
 }

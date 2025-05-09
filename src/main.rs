@@ -25,8 +25,7 @@ fn main() -> io::Result<()> {
     let ast = parser.parse().unwrap();
 
     let mut analyzer = Analyzer::new(&ast);
-    let result = analyzer.analyze();
-    println!("{:#?}", result);
+    analyzer.analyze().unwrap();
 
     Ok(())
 }

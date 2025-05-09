@@ -7,28 +7,9 @@ use crate::common::token::{SpannedToken, Token};
 
 use crate::common::ast::*;
 
-#[derive(Debug)]
 pub struct Parser {
     tokens: Vec<SpannedToken>,
     position: usize,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct SyntaxError {
-    pub message: String,
-    pub span: Span,
-}
-
-impl SyntaxError {
-    pub fn new(message: String, span: Span) -> Self {
-        Self { message, span }
-    }
-}
-
-impl Display for SyntaxError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "SyntaxError: {} (at {})", self.message, self.span)
-    }
 }
 
 impl Parser {
@@ -40,22 +21,53 @@ impl Parser {
         }
     }
 
-    // Returns a reference to the current token without consuming it
-    fn peek(&self) -> &Token {
-        &self.tokens[self.position].node
+    // Basically just a wrapper around parse_body for now. This abstraction might be useful later
+    // to add global file properties like shebangs or imports
+    pub fn parse(&mut self) -> Result<Program, SyntaxError> {
+        Ok(Program {
+            body: self.parse_body()?,
+        })
     }
 
-    fn peek_next(&self) -> &Token {
-        &self.tokens[self.position + 1].node
+    // Parses the entire input and returns a vector of statements
+    pub fn parse_body(&mut self) -> Result<Vec<SpannedStatement>, SyntaxError> {
+        let mut statements: Vec<SpannedStatement> = Vec::new();
+        while self.peek() != &Token::EOF && self.peek() != &Token::RightBrace {
+            statements.push(self.parse_statement()?);
+        }
+        if self.peek() == &Token::RightBrace {
+            self.advance();
+        }
+        Ok(statements)
     }
 
-    fn peek_span(&self) -> Span {
-        self.tokens[self.position].span
-    }
+    // Parses an expression using precedence climbing
+    fn parse_expression(&mut self, min_prec: u8) -> Result<SpannedExpression, SyntaxError> {
+        let mut left = self.parse_primary()?;
+        loop {
+            let token = self.peek();
+            // Early exit if it's not a binary operator
+            let op = match token.get_binary_operator() {
+                Some(op) => op,
+                None => break,
+            };
 
-    // Advances the parser to the next token
-    fn advance(&mut self) {
-        self.position += 1;
+            let op_prec = op.get_precedence();
+            if op_prec < min_prec {
+                break;
+            }
+
+            self.advance(); // consume the operator
+            // Left-associative: use op_prec + 1
+            let right = self.parse_expression(op_prec + 1)?;
+            left = Expression::Binary(Box::new(BinaryExpression {
+                left,
+                operator: op,
+                right,
+            }))
+            .spanned(self.peek_span());
+        }
+        Ok(left)
     }
 
     // Parses a primary expression (e.g., literal, identifier, function call, or parenthesized expression)
@@ -117,35 +129,6 @@ impl Parser {
         }
     }
 
-    // Parses an expression using precedence climbing
-    fn parse_expression(&mut self, min_prec: u8) -> Result<SpannedExpression, SyntaxError> {
-        let mut left = self.parse_primary()?;
-        loop {
-            let token = self.peek();
-            // Early exit if it's not a binary operator
-            let op = match token.get_binary_operator() {
-                Some(op) => op,
-                None => break,
-            };
-
-            let op_prec = op.get_precedence();
-            if op_prec < min_prec {
-                break;
-            }
-
-            self.advance(); // consume the operator
-            // Left-associative: use op_prec + 1
-            let right = self.parse_expression(op_prec + 1)?;
-            left = Expression::Binary(Box::new(BinaryExpression {
-                left,
-                operator: op,
-                right,
-            }))
-            .spanned(self.peek_span());
-        }
-        Ok(left)
-    }
-
     fn parse_variable_assignemnt(&mut self) -> Result<SpannedStatement, SyntaxError> {
         let Token::Identifier(name) = self.peek().clone() else {
             return Err(SyntaxError::new(
@@ -169,13 +152,13 @@ impl Parser {
         };
         self.advance();
         self.expect(Token::Colon)?;
-        let Token::Identifier(type_name) = self.peek().clone() else {
+        let Token::Identifier(type_name) = self.peek() else {
             return Err(SyntaxError::new(
                 format!("expected type identifier, got {:?}", self.peek()),
                 self.peek_span(),
             ));
         };
-        let type_ = match Type::from_str(&type_name) {
+        let type_ = match Type::from_str(type_name) {
             Ok(type_) => type_,
             Err(err) => return Err(SyntaxError::new(err, self.peek_span())),
         };
@@ -254,13 +237,13 @@ impl Parser {
         }
         self.expect(Token::RightParen)?;
         self.expect(Token::Colon)?;
-        let Token::Identifier(return_type_name) = self.peek().clone() else {
+        let Token::Identifier(return_type_name) = self.peek() else {
             return Err(SyntaxError::new(
                 format!("expected return type identifier, got {:?}", self.peek()),
                 self.peek_span(),
             ));
         };
-        let type_ = match Type::from_str(&return_type_name) {
+        let type_ = match Type::from_str(return_type_name) {
             Ok(type_) => type_,
             Err(err) => return Err(SyntaxError::new(err, self.peek_span())),
         };
@@ -325,7 +308,7 @@ impl Parser {
         };
         self.advance();
         self.expect(Token::Colon)?;
-        let Token::Identifier(type_name) = self.peek().clone() else {
+        let Token::Identifier(type_name) = self.peek() else {
             return Err(SyntaxError::new(
                 format!("expected type identifier, got {:?}", self.peek()),
                 self.peek_span(),
@@ -341,7 +324,7 @@ impl Parser {
 
     // Parses a statement (e.g., function call)
     fn parse_statement(&mut self) -> Result<SpannedStatement, SyntaxError> {
-        let token = self.peek().clone();
+        let token = self.peek();
         let Token::Identifier(name) = token.clone() else {
             return Err(SyntaxError::new(
                 format!(
@@ -373,7 +356,7 @@ impl Parser {
                 self.advance();
                 self.parse_function()
             }
-            _ => match self.peek_next().clone() {
+            _ => match self.peek_next() {
                 Token::LeftParen => self.parse_function_call(),
                 Token::Assign => self.parse_variable_assignemnt(),
                 _ => Err(SyntaxError::new(
@@ -389,8 +372,8 @@ impl Parser {
 
     // Expects a specific token and consumes it, panicking if the token doesn't match
     fn expect(&mut self, expected: Token) -> Result<(), SyntaxError> {
-        let token = self.peek().clone();
-        if token != expected {
+        let token = self.peek();
+        if token != &expected {
             return Err(SyntaxError {
                 message: format!("Expected {:?}, got {:?}", expected, token),
                 span: self.peek_span(),
@@ -400,23 +383,39 @@ impl Parser {
         Ok(())
     }
 
-    // Parses the entire input and returns a vector of statements
-    pub fn parse_body(&mut self) -> Result<Vec<SpannedStatement>, SyntaxError> {
-        let mut statements: Vec<SpannedStatement> = Vec::new();
-        while self.peek() != &Token::EOF && self.peek() != &Token::RightBrace {
-            statements.push(self.parse_statement()?);
-        }
-        if self.peek() == &Token::RightBrace {
-            self.advance();
-        }
-        Ok(statements)
+    // Returns a reference to the current token without consuming it
+    fn peek(&self) -> &Token {
+        &self.tokens[self.position].node
     }
 
-    // Basically just a wrapper around parse_body for now. This abstraction might be useful later
-    // to add global file properties like shebangs or imports
-    pub fn parse(&mut self) -> Result<Program, SyntaxError> {
-        Ok(Program {
-            body: self.parse_body()?,
-        })
+    fn peek_next(&self) -> &Token {
+        &self.tokens[self.position + 1].node
+    }
+
+    fn peek_span(&self) -> Span {
+        self.tokens[self.position].span
+    }
+
+    // Advances the parser to the next token
+    fn advance(&mut self) {
+        self.position += 1;
+    }
+}
+
+#[derive(Debug)]
+pub struct SyntaxError {
+    pub message: String,
+    pub span: Span,
+}
+
+impl SyntaxError {
+    pub fn new(message: String, span: Span) -> Self {
+        Self { message, span }
+    }
+}
+
+impl Display for SyntaxError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SyntaxError: {} (at {})", self.message, self.span)
     }
 }
