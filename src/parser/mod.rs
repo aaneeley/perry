@@ -32,10 +32,10 @@ impl Parser {
     // Parses the entire input and returns a vector of statements
     pub fn parse_body(&mut self) -> Result<Vec<SpannedStatement>, SyntaxError> {
         let mut statements: Vec<SpannedStatement> = Vec::new();
-        while self.peek() != &Token::EOF && self.peek() != &Token::RightBrace {
+        while self.curr() != &Token::EOF && self.curr() != &Token::RightBrace {
             statements.push(self.parse_statement()?);
         }
-        if self.peek() == &Token::RightBrace {
+        if self.curr() == &Token::RightBrace {
             self.advance();
         }
         Ok(statements)
@@ -45,7 +45,7 @@ impl Parser {
     fn parse_expression(&mut self, min_prec: u8) -> Result<SpannedExpression, SyntaxError> {
         let mut left = self.parse_primary()?;
         loop {
-            let token = self.peek();
+            let token = self.curr();
             // Early exit if it's not a binary operator
             let op = match token.get_binary_operator() {
                 Some(op) => op,
@@ -65,43 +65,43 @@ impl Parser {
                 operator: op,
                 right,
             }))
-            .spanned(self.peek_span());
+            .spanned(self.curr_span());
         }
         Ok(left)
     }
 
     // Parses a primary expression (e.g., literal, identifier, function call, or parenthesized expression)
     fn parse_primary(&mut self) -> Result<SpannedExpression, SyntaxError> {
-        match self.peek().clone() {
+        match self.curr().clone() {
             Token::StringLiteral(value) => {
                 self.advance();
                 Ok(Expression::Literal(LiteralExpression {
                     value: LiteralValue::String(value),
                 })
-                .spanned(self.peek_span()))
+                .spanned(self.curr_span()))
             }
             Token::NumericLiteral(value) => {
                 self.advance();
                 Ok(Expression::Literal(LiteralExpression {
                     value: LiteralValue::Number(value),
                 })
-                .spanned(self.peek_span()))
+                .spanned(self.curr_span()))
             }
             Token::BooleanLiteral(value) => {
                 self.advance();
                 Ok(Expression::Literal(LiteralExpression {
                     value: LiteralValue::Bool(value),
                 })
-                .spanned(self.peek_span()))
+                .spanned(self.curr_span()))
             }
             Token::Identifier(name) => {
                 self.advance();
-                if self.peek() == &Token::LeftParen {
+                if self.curr() == &Token::LeftParen {
                     self.advance(); // consume '('
                     let mut args = Vec::new();
-                    if self.peek() != &Token::RightParen {
+                    if self.curr() != &Token::RightParen {
                         args.push(self.parse_expression(0)?);
-                        while self.peek() == &Token::Comma {
+                        while self.curr() == &Token::Comma {
                             self.advance();
                             args.push(self.parse_expression(0)?);
                         }
@@ -109,11 +109,11 @@ impl Parser {
                     self.expect(Token::RightParen)?;
                     Ok(
                         Expression::FunctionCall(Box::new(FunctionCall { callee: name, args }))
-                            .spanned(self.peek_span()),
+                            .spanned(self.curr_span()),
                     )
                 } else {
                     Ok(Expression::VariableRef(Box::new(VariableRef { name }))
-                        .spanned(self.peek_span()))
+                        .spanned(self.curr_span()))
                 }
             }
             Token::LeftParen => {
@@ -124,49 +124,49 @@ impl Parser {
             }
             _ => Err(SyntaxError::new(
                 "Invalid symbol for primary expression".to_string(),
-                self.peek_span(),
+                self.curr_span(),
             )),
         }
     }
 
     fn parse_variable_assignemnt(&mut self) -> Result<SpannedStatement, SyntaxError> {
-        let Token::Identifier(name) = self.peek().clone() else {
+        let Token::Identifier(name) = self.curr().clone() else {
             return Err(SyntaxError::new(
-                format!("expected identifier, got {:?}", self.peek()),
-                self.peek_span(),
+                format!("expected identifier, got {:?}", self.curr()),
+                self.curr_span(),
             ));
         };
         self.advance();
         self.expect(Token::Assign)?;
         let value = self.parse_expression(0)?;
         self.expect(Token::Semicolon)?;
-        Ok(Statement::VarAssignment(VariableAssignment { name, value }).spanned(self.peek_span()))
+        Ok(Statement::VarAssignment(VariableAssignment { name, value }).spanned(self.curr_span()))
     }
 
     fn parse_variable_declaration(&mut self) -> Result<SpannedStatement, SyntaxError> {
-        let Token::Identifier(name) = self.peek().clone() else {
+        let Token::Identifier(name) = self.curr().clone() else {
             return Err(SyntaxError::new(
-                format!("expected identifier, got {:?}", self.peek()),
-                self.peek_span(),
+                format!("expected identifier, got {:?}", self.curr()),
+                self.curr_span(),
             ));
         };
         self.advance();
         self.expect(Token::Colon)?;
-        let Token::Identifier(type_name) = self.peek() else {
+        let Token::Identifier(type_name) = self.curr() else {
             return Err(SyntaxError::new(
-                format!("expected type identifier, got {:?}", self.peek()),
-                self.peek_span(),
+                format!("expected type identifier, got {:?}", self.curr()),
+                self.curr_span(),
             ));
         };
         let type_ = match Type::from_str(type_name) {
             Ok(type_) => type_,
-            Err(err) => return Err(SyntaxError::new(err, self.peek_span())),
+            Err(err) => return Err(SyntaxError::new(err, self.curr_span())),
         };
         self.advance();
         self.expect(Token::Assign)?;
         let value = self.parse_expression(0)?;
         self.expect(Token::Semicolon)?;
-        Ok(Statement::VarDecl(VariableDecl { name, value, type_ }).spanned(self.peek_span()))
+        Ok(Statement::VarDecl(VariableDecl { name, value, type_ }).spanned(self.curr_span()))
     }
 
     // Parses an if statement.
@@ -178,12 +178,12 @@ impl Parser {
         self.expect(Token::LeftBrace)?;
         let then_body = self.parse_body()?;
         let else_body: Option<Box<SpannedStatement>> =
-            if self.peek() == &Token::Identifier("else".to_string()) {
+            if self.curr() == &Token::Identifier("else".to_string()) {
                 self.advance();
-                if self.peek() == &Token::Identifier("if".to_string()) {
+                if self.curr() == &Token::Identifier("if".to_string()) {
                     self.advance();
                     Some(Box::new(
-                        Statement::If(self.parse_if()?).spanned(self.peek_span()),
+                        Statement::If(self.parse_if()?).spanned(self.curr_span()),
                     ))
                 } else {
                     self.expect(Token::LeftBrace)?;
@@ -192,11 +192,11 @@ impl Parser {
                             condition: Expression::Literal(LiteralExpression {
                                 value: LiteralValue::Bool(true),
                             })
-                            .spanned(self.peek_span()),
+                            .spanned(self.curr_span()),
                             then_body: self.parse_body()?,
                             else_body: None,
                         })
-                        .spanned(self.peek_span()),
+                        .spanned(self.curr_span()),
                     ))
                 }
             } else {
@@ -215,37 +215,37 @@ impl Parser {
         self.expect(Token::RightParen)?;
         self.expect(Token::LeftBrace)?;
         let body = self.parse_body()?;
-        Ok(Statement::Loop(LoopStatement { condition, body }).spanned(self.peek_span()))
+        Ok(Statement::Loop(LoopStatement { condition, body }).spanned(self.curr_span()))
     }
 
     fn parse_function(&mut self) -> Result<SpannedStatement, SyntaxError> {
-        let Token::Identifier(name) = self.peek().clone() else {
+        let Token::Identifier(name) = self.curr().clone() else {
             return Err(SyntaxError::new(
-                format!("expected identifier, got {:?}", self.peek()),
-                self.peek_span(),
+                format!("expected identifier, got {:?}", self.curr()),
+                self.curr_span(),
             ));
         };
         self.advance();
         self.expect(Token::LeftParen)?;
         let mut params = Vec::new();
-        if self.peek() != &Token::RightParen {
+        if self.curr() != &Token::RightParen {
             params.push(self.parse_parameter()?);
-            while self.peek() == &Token::Comma {
+            while self.curr() == &Token::Comma {
                 self.advance();
                 params.push(self.parse_parameter()?);
             }
         }
         self.expect(Token::RightParen)?;
         self.expect(Token::Colon)?;
-        let Token::Identifier(return_type_name) = self.peek() else {
+        let Token::Identifier(return_type_name) = self.curr() else {
             return Err(SyntaxError::new(
-                format!("expected return type identifier, got {:?}", self.peek()),
-                self.peek_span(),
+                format!("expected return type identifier, got {:?}", self.curr()),
+                self.curr_span(),
             ));
         };
         let type_ = match Type::from_str(return_type_name) {
             Ok(type_) => type_,
-            Err(err) => return Err(SyntaxError::new(err, self.peek_span())),
+            Err(err) => return Err(SyntaxError::new(err, self.curr_span())),
         };
         self.advance();
         self.expect(Token::LeftBrace)?;
@@ -256,22 +256,22 @@ impl Parser {
             type_,
             body,
         })
-        .spanned(self.peek_span()))
+        .spanned(self.curr_span()))
     }
 
     fn parse_function_call(&mut self) -> Result<SpannedStatement, SyntaxError> {
-        let Token::Identifier(name) = self.peek().clone() else {
+        let Token::Identifier(name) = self.curr().clone() else {
             return Err(SyntaxError::new(
-                format!("expected identifier, got {:?}", self.peek()),
-                self.peek_span(),
+                format!("expected identifier, got {:?}", self.curr()),
+                self.curr_span(),
             ));
         };
         self.advance();
         self.expect(Token::LeftParen)?;
         let mut args = Vec::new();
-        if self.peek() != &Token::RightParen {
+        if self.curr() != &Token::RightParen {
             args.push(self.parse_expression(0)?); // Parse first argument
-            while self.peek() == &Token::Comma {
+            while self.curr() == &Token::Comma {
                 self.advance(); // consume comma
                 args.push(self.parse_expression(0)?); // Parse next argument
             }
@@ -284,39 +284,39 @@ impl Parser {
                 callee: name,
                 args,
             })))
-            .spanned(self.peek_span()),
+            .spanned(self.curr_span()),
         )
     }
 
     fn parse_return(&mut self) -> Result<SpannedStatement, SyntaxError> {
-        if self.peek() == &Token::Semicolon {
+        if self.curr() == &Token::Semicolon {
             self.advance();
-            return Ok(Statement::Return(ReturnStatement { value: None }).spanned(self.peek_span()));
+            return Ok(Statement::Return(ReturnStatement { value: None }).spanned(self.curr_span()));
         }
         let value = self.parse_expression(0)?;
         self.expect(Token::Semicolon)?;
-        Ok(Statement::Return(ReturnStatement { value: Some(value) }).spanned(self.peek_span()))
+        Ok(Statement::Return(ReturnStatement { value: Some(value) }).spanned(self.curr_span()))
     }
 
     // Parses a parameter
     fn parse_parameter(&mut self) -> Result<Parameter, SyntaxError> {
-        let Token::Identifier(name) = self.peek().clone() else {
+        let Token::Identifier(name) = self.curr().clone() else {
             return Err(SyntaxError::new(
-                format!("expected identifier, got {:?}", self.peek()),
-                self.peek_span(),
+                format!("expected identifier, got {:?}", self.curr()),
+                self.curr_span(),
             ));
         };
         self.advance();
         self.expect(Token::Colon)?;
-        let Token::Identifier(type_name) = self.peek() else {
+        let Token::Identifier(type_name) = self.curr() else {
             return Err(SyntaxError::new(
-                format!("expected type identifier, got {:?}", self.peek()),
-                self.peek_span(),
+                format!("expected type identifier, got {:?}", self.curr()),
+                self.curr_span(),
             ));
         };
         let type_ = match Type::from_str(&type_name) {
             Ok(type_) => type_,
-            Err(err) => return Err(SyntaxError::new(err, self.peek_span())),
+            Err(err) => return Err(SyntaxError::new(err, self.curr_span())),
         };
         self.advance();
         Ok(Parameter { name, type_ })
@@ -324,14 +324,14 @@ impl Parser {
 
     // Parses a statement (e.g., function call)
     fn parse_statement(&mut self) -> Result<SpannedStatement, SyntaxError> {
-        let token = self.peek();
+        let token = self.curr();
         let Token::Identifier(name) = token.clone() else {
             return Err(SyntaxError::new(
                 format!(
                     "expected identifier as first token in statement, got {:?}",
                     token
                 ),
-                self.peek_span(),
+                self.curr_span(),
             ));
         };
         match name.as_str() {
@@ -342,7 +342,7 @@ impl Parser {
             "if" => {
                 self.advance();
                 self.parse_if()
-                    .map(|if_statement| Statement::If(if_statement).spanned(self.peek_span()))
+                    .map(|if_statement| Statement::If(if_statement).spanned(self.curr_span()))
             }
             "return" => {
                 self.advance();
@@ -356,15 +356,15 @@ impl Parser {
                 self.advance();
                 self.parse_function()
             }
-            _ => match self.peek_next() {
+            _ => match self.peek() {
                 Token::LeftParen => self.parse_function_call(),
                 Token::Assign => self.parse_variable_assignemnt(),
                 _ => Err(SyntaxError::new(
                     format!(
                         "Expected assignment or function call after identifier, got {:?}",
-                        self.peek()
+                        self.curr()
                     ),
-                    self.peek_span(),
+                    self.curr_span(),
                 )),
             },
         }
@@ -372,11 +372,11 @@ impl Parser {
 
     // Expects a specific token and consumes it, panicking if the token doesn't match
     fn expect(&mut self, expected: Token) -> Result<(), SyntaxError> {
-        let token = self.peek();
+        let token = self.curr();
         if token != &expected {
             return Err(SyntaxError {
                 message: format!("Expected {:?}, got {:?}", expected, token),
-                span: self.peek_span(),
+                span: self.curr_span(),
             });
         }
         self.advance(); // consume the token
@@ -384,16 +384,16 @@ impl Parser {
     }
 
     // Returns a reference to the current token without consuming it
-    fn peek(&self) -> &Token {
+    fn curr(&self) -> &Token {
         &self.tokens[self.position].node
     }
 
-    fn peek_next(&self) -> &Token {
-        &self.tokens[self.position + 1].node
+    fn curr_span(&self) -> Span {
+        self.tokens[self.position].span
     }
 
-    fn peek_span(&self) -> Span {
-        self.tokens[self.position].span
+    fn peek(&self) -> &Token {
+        &self.tokens[self.position + 1].node
     }
 
     // Advances the parser to the next token

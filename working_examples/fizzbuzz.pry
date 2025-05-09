@@ -18,5 +18,4 @@ func fizzbuzz(limit: int): void {
     }
 }
 
-var result: int = fizzbuzz(15);
-println(result);
+fizzbuzz(15);

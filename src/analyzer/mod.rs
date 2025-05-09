@@ -69,10 +69,22 @@ impl<'a> Analyzer<'a> {
 
     // Calls analyze_body on the top-level program AST
     pub fn analyze(&mut self) -> Result<(), SemanticError> {
-        self.symbol_table
-            .add_symbol("print".to_string(), Type::Void);
-        self.symbol_table
-            .add_symbol("print".to_string(), Type::Void);
+        self.symbol_table.add_function_signature(
+            "print".to_string(),
+            Type::Void,
+            vec![Parameter {
+                name: "arg".to_string(),
+                type_: Type::String,
+            }],
+        );
+        self.symbol_table.add_function_signature(
+            "println".to_string(),
+            Type::Void,
+            vec![Parameter {
+                name: "arg".to_string(),
+                type_: Type::String,
+            }],
+        );
         self.analyze_body(&self.program_ast.body)?;
         Ok(())
     }
