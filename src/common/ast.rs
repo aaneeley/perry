@@ -1,4 +1,4 @@
-use std::{error::Error, fmt::Display, str::FromStr};
+use std::{fmt::Display, str::FromStr};
 
 use super::*;
 
@@ -79,8 +79,8 @@ impl Display for Type {
     }
 }
 
-impl From<LiteralValue> for Type {
-    fn from(s: LiteralValue) -> Self {
+impl From<&LiteralValue> for Type {
+    fn from(s: &LiteralValue) -> Self {
         match s {
             LiteralValue::String(_) => Type::String,
             LiteralValue::Number(_) => Type::Int,

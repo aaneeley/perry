@@ -12,7 +12,7 @@ func fizzbuzz(limit: int): void {
         } else if (i % 5 == 0) {
             println("Buzz");
         } else {
-            println(to_str(i)); // print only takes string
+            println(i); 
         }
         i = i + 1;
     }

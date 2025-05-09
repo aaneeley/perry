@@ -1,2 +1,9 @@
-println("Hello, World!");
-println((1 + 10) * 2);
+func testLoop(): void {
+    var test: int = 1;
+    while ( test < 100 ) {
+        println(test);
+        test = test + 1;
+    }
+}
+
+testLoop();

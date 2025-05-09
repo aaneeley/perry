@@ -1,16 +1,16 @@
 //pub mod test;
 
-use std::{collections::HashMap, fmt::Display, hash::Hash};
+use std::{collections::HashMap, fmt::Display};
 
 use crate::common::{
     ast::{
-        self, Expression, FunctionCall, LiteralExpression, LiteralValue, Parameter, Span,
-        Spannable, SpannedExpression, SpannedStatement, Statement, Type,
+        self, Expression, LiteralExpression, LiteralValue, Span, Spannable, SpannedStatement,
+        Statement, Type,
     },
     token::BinaryOperator,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct ScopeStack {
     tables: Vec<Vec<SpannedStatement>>,
 }
@@ -38,6 +38,18 @@ impl ScopeStack {
             .iter()
             .rev()
             .flat_map(|table| table.iter())
+            .find(|statement| match statement.as_ref() {
+                Statement::VarDecl(var_decl) => var_decl.name == name,
+                Statement::Function(func) => func.name == name,
+                _ => false,
+            })
+    }
+
+    fn lookup_mut(&mut self, name: &str) -> Option<&mut SpannedStatement> {
+        self.tables
+            .iter_mut()
+            .rev()
+            .flat_map(|table| table.iter_mut())
             .find(|statement| match statement.as_ref() {
                 Statement::VarDecl(var_decl) => var_decl.name == name,
                 Statement::Function(func) => func.name == name,
@@ -109,6 +121,22 @@ impl<'a> Interpreter<'a> {
                 // TODO: returns
                 Ok(LiteralValue::Void)
             }
+            ast::Expression::VariableRef(variable_ref) => {
+                let Some(symbol) = self.scope_stack.lookup(&variable_ref.name) else {
+                    return Err(RuntimeError::new(
+                        format!("use of undefined variable {}", variable_ref.name),
+                        expression.span,
+                    ));
+                };
+                let Statement::VarDecl(declared_expression) = symbol.clone().node else {
+                    panic!(
+                        "attempted to evaluate non-statement {:?}",
+                        symbol.clone().node
+                    );
+                };
+                let evaluated_expression = self.evaluate_expression(&declared_expression.value)?;
+                Ok(evaluated_expression)
+            }
             ast::Expression::Binary(binary_expression) => {
                 let left_value = self.evaluate_expression(&binary_expression.left)?;
                 let right_value = self.evaluate_expression(&binary_expression.right)?;
@@ -169,11 +197,6 @@ impl<'a> Interpreter<'a> {
                     BinaryOperator::NotEqual => Ok(LiteralValue::Bool(left_value != right_value)),
                 }
             }
-
-            _ => Err(RuntimeError::new(
-                format!("not implemented"),
-                expression.span,
-            )),
         }
     }
 
@@ -191,8 +214,9 @@ impl<'a> Interpreter<'a> {
         // Label arguments with their names in the function signature
         for (i, value) in arg_vals.iter().enumerate() {
             self.scope_stack.add_statement(
-                ast::Statement::VarAssignment(ast::VariableAssignment {
+                ast::Statement::VarDecl(ast::VariableDecl {
                     name: func.params[i].name.clone(),
+                    type_: Type::from(value),
                     value: Expression::Literal(LiteralExpression {
                         value: value.clone(),
                     })
@@ -201,7 +225,7 @@ impl<'a> Interpreter<'a> {
                 .spanned(function.span),
             );
         }
-        self.execute_body(&func.body)?;
+        self.execute_statements(&func.body)?;
         // TODO: returns
         Ok(LiteralValue::Void)
     }
@@ -213,12 +237,12 @@ impl<'a> Interpreter<'a> {
             self.scope_stack.exit_scope();
             return Ok(());
         }
-        self.execute_body(&loop_statement.body)?;
+        self.execute_statements(&loop_statement.body)?;
         self.execute_loop(loop_statement)?;
         Ok(())
     }
 
-    fn execute_body(&mut self, body: &Vec<SpannedStatement>) -> Result<(), RuntimeError> {
+    fn execute_statements(&mut self, body: &Vec<SpannedStatement>) -> Result<(), RuntimeError> {
         for statement in body.iter() {
             match statement.node.clone() {
                 ast::Statement::Function(_) | ast::Statement::VarDecl(_) => {
@@ -228,9 +252,9 @@ impl<'a> Interpreter<'a> {
                     self.scope_stack.enter_scope();
                     let condition_value = self.evaluate_expression(&if_statement.condition)?;
                     if condition_value == LiteralValue::Bool(true) {
-                        self.execute_body(&if_statement.then_body)?;
+                        self.execute_statements(&if_statement.then_body)?;
                     } else if let Some(else_body) = &if_statement.else_body {
-                        self.execute_body(&vec![*else_body.clone()])?;
+                        self.execute_statements(&vec![*else_body.clone()])?;
                     }
                     self.scope_stack.exit_scope();
                 }
@@ -238,6 +262,31 @@ impl<'a> Interpreter<'a> {
                 ast::Statement::Expr(expr) => {
                     // NOTE: Might want to filter by function calls here.
                     self.evaluate_expression(&expr.spanned(statement.span))?;
+                }
+                ast::Statement::VarAssignment(var_assignment) => {
+                    let identifier = var_assignment.name.clone();
+                    let evaluated_assignment_value =
+                        self.evaluate_expression(&var_assignment.value)?;
+
+                    // Verify variable is already declared
+                    let Some(symbol) = self.scope_stack.lookup_mut(&identifier) else {
+                        return Err(RuntimeError::new(
+                            format!("cannot assign undeclared variable {}", identifier),
+                            statement.span,
+                        ));
+                    };
+
+                    // Change the value of the variable declaration
+                    if let Statement::VarDecl(assignment) = &mut symbol.node {
+                        assignment.value.node = Expression::Literal(LiteralExpression {
+                            value: evaluated_assignment_value,
+                        });
+                    } else {
+                        panic!(
+                            "attempted to reassign variable of non-statement type: {:?}",
+                            statement.node.clone()
+                        )
+                    }
                 }
                 _ => panic!("invalid statement in execution body"),
             }
@@ -248,7 +297,7 @@ impl<'a> Interpreter<'a> {
     pub fn execute(&mut self) -> Result<(), RuntimeError> {
         self.scope_stack.enter_scope();
         self.initialize_built_ins();
-        self.execute_body(&self.program_ast.body)?;
+        self.execute_statements(&self.program_ast.body)?;
         Ok(())
     }
 }

@@ -139,7 +139,7 @@ impl<'a> Analyzer<'a> {
                 // Verify variable is already declared
                 let Some(symbol) = self.symbol_table.lookup(&identifier) else {
                     return Err(SemanticError {
-                        message: format!("use of undeclared identifier {}", identifier),
+                        message: format!("cannot assign to undeclared identifier {}", identifier),
                         span: statement.span,
                     });
                 };
