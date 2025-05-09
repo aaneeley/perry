@@ -1,4 +1,4 @@
-//pub mod test;
+pub mod test;
 
 use std::{collections::HashMap, fmt::Display};
 
