@@ -47,7 +47,6 @@ impl ScopeStack {
     fn lookup_mut(&mut self, name: &str) -> Option<&mut SpannedStatement> {
         self.tables
             .iter_mut()
-            .rev()
             .flat_map(|table| table.iter_mut())
             .find(|statement| match statement.as_ref() {
                 Statement::VarDecl(var_decl) => var_decl.name == name,
