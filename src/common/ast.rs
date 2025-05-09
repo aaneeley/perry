@@ -1,4 +1,4 @@
-use std::{fmt::Display, str::FromStr};
+use std::{error::Error, fmt::Display, str::FromStr};
 
 use super::*;
 
@@ -77,6 +77,16 @@ impl Display for Type {
     }
 }
 
+impl From<LiteralValue> for Type {
+    fn from(s: LiteralValue) -> Self {
+        match s {
+            LiteralValue::String(_) => Type::String,
+            LiteralValue::Number(_) => Type::Int,
+            LiteralValue::Bool(_) => Type::Bool,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Binary(Box<BinaryExpression>),
@@ -151,6 +161,16 @@ pub enum LiteralValue {
     String(String),
     Number(i32),
     Bool(bool),
+}
+
+impl Display for LiteralValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LiteralValue::String(value) => write!(f, "{}", value),
+            LiteralValue::Number(value) => write!(f, "{}", value),
+            LiteralValue::Bool(value) => write!(f, "{}", value),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

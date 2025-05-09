@@ -248,7 +248,7 @@ impl<'a> Analyzer<'a> {
         Ok(false)
     }
 
-    fn analyze_expression(
+    pub fn analyze_expression(
         &mut self,
         expression: &ast::SpannedExpression,
     ) -> Result<Type, SemanticError> {

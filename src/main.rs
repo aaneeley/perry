@@ -1,5 +1,6 @@
 mod analyzer;
 mod common;
+mod interpreter;
 mod parser;
 mod tokenizer;
 use std::env;
@@ -7,6 +8,7 @@ use std::fs::File;
 use std::io::{self, Read};
 
 use analyzer::Analyzer;
+use interpreter::Interpreter;
 use parser::Parser;
 use tokenizer::Tokenizer;
 
@@ -26,6 +28,9 @@ fn main() -> io::Result<()> {
 
     let mut analyzer = Analyzer::new(&ast);
     analyzer.analyze().unwrap();
+
+    let mut interpreter = Interpreter::new(&ast);
+    interpreter.execute().unwrap();
 
     Ok(())
 }
